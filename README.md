@@ -162,9 +162,17 @@ Customize the interface by modifying components in `app/components/` and `compon
 5. Submit a pull request
 
 ## References
+
+### External Resources
 - [Composio Website](https://composio.dev/)
 - [Composio Documentation](https://docs.composio.dev/docs/welcome)
 - [Composio SDK](https://github.com/composiohq/composio)
+
+### Convex Agent Resources
+- **Documentation**: [Convex Agents - Files and Images](./convex-agents-files.md) - Guide on working with files and images in Convex agents
+- **Reference Repositories**:
+  - [`./agent/`](./agent) - [get-convex/agent](https://github.com/get-convex/agent) - Convex Agent component
+  - [`./workflow/`](./workflow) - [get-convex/workflow](https://github.com/get-convex/workflow) - Convex Workflow component
 
 ## License
 
