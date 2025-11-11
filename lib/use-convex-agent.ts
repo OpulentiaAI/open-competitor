@@ -51,6 +51,13 @@ export function useConvexAgent() {
 /**
  * Hook to get messages from a thread
  */
-export function useMessages(threadId: string) {
+export function useMessages(threadId: any) {
   return useQuery(api.messages.list, { threadId });
+}
+
+/**
+ * Hook to create a new thread
+ */
+export function useCreateThread() {
+  return useMutation(api.threads.create);
 }

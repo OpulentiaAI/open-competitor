@@ -1,13 +1,13 @@
 'use client';
 
 import { clsx } from 'clsx';
-import { FiSliders, FiGrid, FiStar, FiLogOut } from 'react-icons/fi';
+import { FiSliders, FiGrid, FiStar, FiLogOut, FiShoppingBag } from 'react-icons/fi';
 import { parseCookies } from '../../lib/utils';
 import { useState, useEffect } from 'react';
 
 interface NavigationProps {
-  activeTab: 'superagent' | 'ppt' | 'sheets';
-  onTabChange: (tab: 'superagent' | 'ppt' | 'sheets') => void;
+  activeTab: 'superagent' | 'ppt' | 'sheets' | 'meals';
+  onTabChange: (tab: 'superagent' | 'ppt' | 'sheets' | 'meals') => void;
 }
 
 export default function Navigation({ activeTab, onTabChange }: NavigationProps) {
@@ -38,7 +38,7 @@ export default function Navigation({ activeTab, onTabChange }: NavigationProps) 
               )}
             >
               <FiStar className="w-4 h-4" />
-              <span>Super Agent</span>
+              <span>SuperAgent</span>
             </button>
             <button
               onClick={() => onTabChange('ppt')}
@@ -64,6 +64,18 @@ export default function Navigation({ activeTab, onTabChange }: NavigationProps) 
               <FiGrid className="w-4 h-4" />
               <span>Sheets</span>
             </button>
+            <button
+              onClick={() => onTabChange('meals')}
+              className={clsx(
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                activeTab === 'meals'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-200'
+              )}
+            >
+              <FiShoppingBag className="w-4 h-4" />
+              <span>Meals</span>
+            </button>
           </div>
         </div>
 
@@ -79,4 +91,4 @@ export default function Navigation({ activeTab, onTabChange }: NavigationProps) 
       </div>
     </nav>
   );
-} 
+}

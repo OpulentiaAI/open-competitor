@@ -6,13 +6,13 @@ import { v } from "convex/values";
  */
 export const add = mutation({
   args: {
-    threadId: v.string(),
+    threadId: v.id("threads"),
     role: v.union(v.literal("user"), v.literal("assistant"), v.literal("system")),
     content: v.string(),
   },
   handler: async (ctx, { threadId, role, content }) => {
     const messageId = await ctx.db.insert("messages", {
-      threadId: threadId as any, // Will be proper ID after thread creation
+      threadId, // threadId is a valid Id<threads>
       role,
       content,
       createdAt: Date.now(),
@@ -26,7 +26,7 @@ export const add = mutation({
  */
 export const list = query({
   args: {
-    threadId: v.string(),
+    threadId: v.id("threads"),
   },
   handler: async (ctx, { threadId }) => {
     const messages = await ctx.db

@@ -16,8 +16,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { GlowCard } from '@/components/ui/spotlight-card';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
-import { PromptInputBox } from '@/components/ui/ai-prompt-box';
 import { HyperText } from '@/components/ui/hyper-text';
+import ToolViews from '@/components/tool-views';
+import ToolbarExpandable from './ToolbarExpandable';
+import { AIChatInput } from './AIChatInput';
+import { MessageFeedback } from './MessageFeedback';
+import { VoiceInputSection } from './VoiceInputSection';
 
 export interface Slide {
   title: string;
@@ -64,9 +68,9 @@ const WelcomeScreen = ({ onPromptSelect }: { onPromptSelect: (prompt: string) =>
 
 
       <div className="mb-2">
-        <HyperText text="Super Agent" className="text-8xl font-bold" />
+        <HyperText text="MealOutput SuperAgent" className="text-8xl font-bold" />
       </div>
-      <p className="text-gray-500 mb-8 max-w-md">Powered by Composio - Your creative partner for generating content, slides, and more.</p>
+      <p className="text-gray-500 mb-8 max-w-md">Powered by Opulentia & Composio - Your creative partner for generating content, slides, and more.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
         {examplePrompts.map((prompt, index) => (
           <motion.button
@@ -143,7 +147,7 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT }: 
               }}
               tabIndex={0}
             >
-              <AnimatePresence mode="wait" initial={false}>
+              <AnimatePresence mode="sync" initial={false}>
                 <motion.div
                   key={activeSlide}
                   initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -227,6 +231,15 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT }: 
             </div>
           </div>
         )}
+        
+        {/* Message Feedback for Assistant Messages */}
+        {message.role === 'assistant' && (
+          <MessageFeedback
+            messageId={message.id}
+            onRatingChange={(rating) => console.log('Rating:', rating)}
+            onGenerateQR={() => console.log('Generate QR')}
+          />
+        )}
       </GlowCard>
       
       {message.role === 'user' && (
@@ -258,9 +271,138 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
   const [docId, setDocId] = useState('');
   const [isDocConnected, setIsDocConnected] = useState(false);
   const [showDocument, setShowDocument] = useState(false);
-  
   const [sidebarWidth, setSidebarWidth] = useState(500); // Default wider width
   const [isResizing, setIsResizing] = useState(false);
+  
+  // New: Mode toggle between chat and tool-views
+  const [interfaceMode, setInterfaceMode] = useState<'chat' | 'toolview'>('chat');
+
+  // Tool handlers for tool-views
+  const handleSendMessage = async (message: string, tool: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/superagent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: message,
+          selectedTool: tool,
+          conversationHistory: [],
+          userId: userId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Handle response based on tool type
+        console.log(`${tool} response:`, data.response);
+      }
+    } catch (error) {
+      console.error('Error with tool:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSearch = async (query: string) => {
+    setIsLoading(true);
+    try {
+      // Implement web search logic here
+      console.log('Searching for:', query);
+      // Simulate search results
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGenerateImage = async (prompt: string, style: string) => {
+    setIsLoading(true);
+    try {
+      // Implement image generation logic here
+      console.log('Generating image:', prompt, style);
+      // Simulate image generation
+    } catch (error) {
+      console.error('Image generation error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreatePresentation = async (topic: string, slideCount: number, style: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/generate-slides', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: topic }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Presentation created:', data);
+      }
+    } catch (error) {
+      console.error('Presentation creation error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateVideo = async (title: string, description: string, style: string) => {
+    setIsLoading(true);
+    try {
+      console.log('Creating video:', title, description, style);
+      // Implement video creation logic here
+    } catch (error) {
+      console.error('Video creation error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMakeCall = async (contactName: string, phoneNumber: string, purpose: string) => {
+    setIsLoading(true);
+    try {
+      console.log('Making call:', contactName, phoneNumber, purpose);
+      // Implement phone call logic here
+    } catch (error) {
+      console.error('Phone call error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUploadFile = async (file: File) => {
+    setIsLoading(true);
+    try {
+      console.log('Uploading file:', file.name);
+      // Implement file upload logic here
+    } catch (error) {
+      console.error('File upload error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownloadFile = async (fileId: string) => {
+    try {
+      console.log('Downloading file:', fileId);
+      // Implement file download logic here
+    } catch (error) {
+      console.error('File download error:', error);
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      console.log('Deleting file:', fileId);
+      // Implement file deletion logic here
+    } catch (error) {
+      console.error('File deletion error:', error);
+    }
+  };
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -530,186 +672,298 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
 
   return (
     <div className={clsx('flex h-screen bg-gray-50 relative', className)}>
-      {/* Main Chat Interface */}
-      <div 
-        className="flex-1 flex flex-col transition-all duration-300"
-        style={{ 
-          marginRight: (showSpreadsheet || showDocument) ? `${sidebarWidth}px` : '0px'
-        }}
-      >
-
-        {/* Messages */}
-        <div className="flex-1 overflow-hidden">
-          {messages.length === 0 ? (
-            <WelcomeScreen onPromptSelect={handleExamplePrompt} />
-          ) : (
-            <ChatMessageList smooth className="px-4 py-4">
-              {messages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  activeSlide={activeSlide}
-                  setActiveSlide={setActiveSlide}
-                  downloadAsPPT={downloadAsPPT}
-                />
-              ))}
-              
-              {isLoading && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-start gap-4 max-w-4xl"
-                >
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                    <FiLoader className="w-4 h-4 text-white animate-spin" />
-                  </div>
-                  <div className="bg-white p-4 rounded-2xl rounded-bl-lg shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
-                      </div>
-                      <span className="text-sm">Thinking...</span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </ChatMessageList>
-          )}
-        </div>
-
-        {/* Input Area */}
-        <div className="border-t border-gray-200 bg-white p-4 shadow-md">
-          <div className="max-w-4xl mx-auto">
-            <PromptInputBox
-              onSend={(message) => handleSubmit(message)}
-              isLoading={isLoading}
-              placeholder="Ask Super Agent anything or paste a Google Sheets/Docs URL..."
-              className="bg-white rounded-2xl shadow-xl text-black"
-            />
-            <p className="text-xs text-center text-gray-400 mt-2 font-sans">
-              Super Agent can make mistakes. Consider checking important information.
-            </p>
-          </div>
+      {/* Mode Switcher Toolbar */}
+      <div className="absolute top-4 left-4 z-30">
+        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-1 flex">
+          <button
+            onClick={() => setInterfaceMode('chat')}
+            className={clsx(
+              'px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2',
+              interfaceMode === 'chat' 
+                ? 'bg-blue-500 text-white shadow-sm' 
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            )}
+          >
+            <FiMessageSquare className="w-4 h-4" />
+            Chat Mode
+          </button>
+          <button
+            onClick={() => setInterfaceMode('toolview')}
+            className={clsx(
+              'px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2',
+              interfaceMode === 'toolview' 
+                ? 'bg-blue-500 text-white shadow-sm' 
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            )}
+          >
+            <FiGrid className="w-4 h-4" />
+            Tool Views
+          </button>
         </div>
       </div>
 
-      {/* Spreadsheet Sidebar */}
-      <AnimatePresence>
-        {showSpreadsheet && isSheetConnected && (
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full bg-white shadow-2xl border-l border-gray-200 flex z-20"
-            style={{ width: `${sidebarWidth}px` }}
-          >
-            {/* Resize Handle */}
-            <div
-              className={clsx(
-                "w-2 h-full bg-gray-100 hover:bg-gray-200 cursor-col-resize flex items-center justify-center group border-r border-gray-200 transition-colors",
-                isResizing && "bg-blue-200"
-              )}
-              onMouseDown={handleMouseDown}
-            >
-              <div className="w-0.5 h-8 bg-gray-400 group-hover:bg-gray-600 transition-colors"></div>
-            </div>
+      {/* Tool Selector Sidebar - only in toolview mode */}
+      {interfaceMode === 'toolview' && (
+        <div className="w-64 bg-white border-r border-gray-200 shadow-sm">
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+              <FiBox className="w-5 h-5" />
+              Available Tools
+            </h3>
+          </div>
+          <div className="p-2">
+            {agentTools.map((tool) => {
+              const Icon = tool.icon;
+              return (
+                <button
+                  key={tool.id}
+                  onClick={() => setSelectedTool(tool)}
+                  className={clsx(
+                    'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all duration-200 mb-1',
+                    selectedTool.id === tool.id
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  )}
+                >
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <div>
+                    <div className="font-medium text-sm">{tool.name}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-            {/* Sidebar Content */}
-            <div className="flex-1 flex flex-col">
-              {/* Spreadsheet Header */}
-              <div className="p-4 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-lg font-semibold text-gray-900">Connected Spreadsheet</h2>
-                  <button
-                    onClick={disconnectSpreadsheet}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <FiX className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <FiCheck className="w-4 h-4" />
-                  <span>Connected to Google Sheets</span>
-                </div>
-                <p className="text-xs text-gray-500 mt-1 truncate">
-                  {sheetUrl}
+      {/* Main Interface Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Tool-specific Header */}
+        {interfaceMode === 'toolview' && (
+          <div className="bg-white border-b border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <selectedTool.icon className="w-6 h-6 text-blue-500" />
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">{selectedTool.name}</h2>
+                <p className="text-sm text-gray-500">
+                  {selectedTool.id === 'general' && 'Chat with AI assistant for general questions and tasks'}
+                  {selectedTool.id === 'slides' && 'Create professional presentations with AI'}
+                  {selectedTool.id === 'search' && 'Search the web for information and results'}
+                  {selectedTool.id === 'images' && 'Generate AI-powered images and artwork'}
+                  {selectedTool.id === 'videos' && 'Create videos from text descriptions'}
+                  {selectedTool.id === 'calls' && 'Make and manage phone calls'}
+                  {selectedTool.id === 'files' && 'Upload, organize, and manage your files'}
                 </p>
               </div>
-
-              {/* Spreadsheet View */}
-              <div className="flex-1 bg-gray-50">
-                <iframe
-                  src={getEmbedUrl(sheetUrl)}
-                  className="w-full h-full border-0"
-                  title="Google Sheets"
-                  allow="fullscreen"
-                />
-              </div>
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
 
-      {/* Google Docs Sidebar */}
-      <AnimatePresence>
-        {showDocument && isDocConnected && (
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full bg-white shadow-2xl border-l border-gray-200 flex z-20"
-            style={{ width: `${sidebarWidth}px` }}
-          >
-            {/* Resize Handle */}
-            <div
-              className={clsx(
-                "w-2 h-full bg-gray-100 hover:bg-gray-200 cursor-col-resize flex items-center justify-center group border-r border-gray-200 transition-colors",
-                isResizing && "bg-blue-200"
-              )}
-              onMouseDown={handleMouseDown}
+        {/* Content Area */}
+        <div className="flex-1 overflow-hidden">
+          {interfaceMode === 'chat' ? (
+            /* Original Chat Interface */
+            <>
+              {/* Messages */}
+              <div className="flex-1 overflow-hidden">
+                {messages.length === 0 ? (
+                  <WelcomeScreen onPromptSelect={handleExamplePrompt} />
+                ) : (
+                  <ChatMessageList smooth className="px-4 py-4">
+                    {messages.map((message) => (
+                      <MessageBubble
+                        key={message.id}
+                        message={message}
+                        activeSlide={activeSlide}
+                        setActiveSlide={setActiveSlide}
+                        downloadAsPPT={downloadAsPPT}
+                      />
+                    ))}
+                    
+                    {isLoading && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-start gap-4 max-w-4xl"
+                      >
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                          <FiLoader className="w-4 h-4 text-white animate-spin" />
+                        </div>
+                        <div className="bg-white p-4 rounded-2xl rounded-bl-lg shadow-sm border border-gray-100">
+                          <div className="flex items-center gap-2 text-gray-500">
+                            <div className="flex gap-1">
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                            </div>
+                            <span className="text-sm">Thinking...</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </ChatMessageList>
+                )}
+              </div>
+
+              {/* Input Area */}
+              <div className="border-t border-gray-200 bg-white p-4 shadow-md">
+                <div className="max-w-4xl mx-auto flex flex-col items-center gap-4">
+                  <AIChatInput
+                    onSubmit={(message) => handleSubmit(message)}
+                    placeholder="Ask MealOutput SuperAgent anything or paste a Google Sheets/Docs URL..."
+                  />
+                  
+                  {/* Voice Input Section */}
+                  <VoiceInputSection
+                    onTranscriptSubmit={(transcript) => handleSubmit(transcript)}
+                    className="w-full"
+                  />
+                  
+                  <p className="text-xs text-center text-gray-400 mt-2 font-sans">
+                    MealOutput SuperAgent can make mistakes. Consider checking important information.
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Tool Views Interface */
+            <ToolViews
+              selectedTool={selectedTool.id}
+              isLoading={isLoading}
+              onSendMessage={handleSendMessage}
+              onSearch={handleSearch}
+              onGenerateImage={handleGenerateImage}
+              onCreatePresentation={handleCreatePresentation}
+              onCreateVideo={handleCreateVideo}
+              onMakeCall={handleMakeCall}
+              onUploadFile={handleUploadFile}
+              onDownloadFile={handleDownloadFile}
+              onDeleteFile={handleDeleteFile}
+              className="h-full"
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Spreadsheet/Document Sidebar - only when connected */}
+      {(showSpreadsheet || showDocument) && (
+        <AnimatePresence>
+          {/* Spreadsheet Sidebar */}
+          {showSpreadsheet && isSheetConnected && (
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 h-full bg-white shadow-2xl border-l border-gray-200 flex z-20"
+              style={{ width: `${sidebarWidth}px` }}
             >
-              <div className="w-0.5 h-8 bg-gray-400 group-hover:bg-gray-600 transition-colors"></div>
-            </div>
-
-            {/* Sidebar Content */}
-            <div className="flex-1 flex flex-col">
-              {/* Document Header */}
-              <div className="p-4 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-lg font-semibold text-gray-900">Connected Document</h2>
-                  <button
-                    onClick={disconnectDocument}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <FiX className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-blue-600">
-                  <FiCheck className="w-4 h-4" />
-                  <span>Connected to Google Docs</span>
-                </div>
-                <p className="text-xs text-gray-500 mt-1 truncate">
-                  {docUrl}
-                </p>
+              {/* Resize Handle */}
+              <div
+                className={clsx(
+                  "w-2 h-full bg-gray-100 hover:bg-gray-200 cursor-col-resize flex items-center justify-center group border-r border-gray-200 transition-colors",
+                  isResizing && "bg-blue-200"
+                )}
+                onMouseDown={handleMouseDown}
+              >
+                <div className="w-0.5 h-8 bg-gray-400 group-hover:bg-gray-600 transition-colors"></div>
               </div>
 
-              {/* Document View */}
-              <div className="flex-1 bg-gray-50">
-                <iframe
-                  src={getDocEmbedUrl(docUrl)}
-                  className="w-full h-full border-0"
-                  title="Google Docs"
-                  allow="fullscreen"
-                />
+              {/* Sidebar Content */}
+              <div className="flex-1 flex flex-col">
+                {/* Spreadsheet Header */}
+                <div className="p-4 border-b border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-lg font-semibold text-gray-900">Connected Spreadsheet</h2>
+                    <button
+                      onClick={disconnectSpreadsheet}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <FiX className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-green-600">
+                    <FiCheck className="w-4 h-4" />
+                    <span>Connected to Google Sheets</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1 truncate">
+                    {sheetUrl}
+                  </p>
+                </div>
+
+                {/* Spreadsheet View */}
+                <div className="flex-1 bg-gray-50">
+                  <iframe
+                    src={getEmbedUrl(sheetUrl)}
+                    className="w-full h-full border-0"
+                    title="Google Sheets"
+                    allow="fullscreen"
+                  />
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+
+          {/* Google Docs Sidebar */}
+          {showDocument && isDocConnected && (
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 h-full bg-white shadow-2xl border-l border-gray-200 flex z-20"
+              style={{ width: `${sidebarWidth}px` }}
+            >
+              {/* Resize Handle */}
+              <div
+                className={clsx(
+                  "w-2 h-full bg-gray-100 hover:bg-gray-200 cursor-col-resize flex items-center justify-center group border-r border-gray-200 transition-colors",
+                  isResizing && "bg-blue-200"
+                )}
+                onMouseDown={handleMouseDown}
+              >
+                <div className="w-0.5 h-8 bg-gray-400 group-hover:bg-gray-600 transition-colors"></div>
+              </div>
+
+              {/* Sidebar Content */}
+              <div className="flex-1 flex flex-col">
+                {/* Document Header */}
+                <div className="p-4 border-b border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-lg font-semibold text-gray-900">Connected Document</h2>
+                    <button
+                      onClick={disconnectDocument}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <FiX className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-blue-600">
+                    <FiCheck className="w-4 h-4" />
+                    <span>Connected to Google Docs</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1 truncate">
+                    {docUrl}
+                  </p>
+                </div>
+
+                {/* Document View */}
+                <div className="flex-1 bg-gray-50">
+                  <iframe
+                    src={getDocEmbedUrl(docUrl)}
+                    className="w-full h-full border-0"
+                    title="Google Docs"
+                    allow="fullscreen"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
+
+      {/* Dynamic Toolbar */}
+      <ToolbarExpandable />
     </div>
   );
-} 
+}

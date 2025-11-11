@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import { generateText, generateObject } from 'ai';
-import { google } from "@ai-sdk/google";
+import { createOpenAI } from "@ai-sdk/openai";
 import { z } from 'zod';
 
 const composio = new Composio({
@@ -254,8 +254,14 @@ async function initializeSlideGenerationTool() {
                 try {
                     const { content, slideCount, style } = input;
                     
+                    // Create OpenRouter client for slide generation
+                    const openrouter = createOpenAI({
+                        apiKey: process.env.OPENROUTER_API_KEY,
+                        baseURL: "https://openrouter.ai/api/v1",
+                    });
+                    
                     const { object } = await generateObject({
-                        model: google('gemini-2.5-pro'),
+                        model: openrouter('anthropic/claude-3.5-sonnet'),
                         schema: slideSchema,
                         prompt: `Create a professional presentation with ${slideCount} slides using a ${style} style, based on the following content:
 
@@ -384,13 +390,8 @@ export async function POST(req: NextRequest) {
     try {
         const { prompt, selectedTool, conversationHistory, userId, sheetUrl, docUrl } = await req.json();
         
-        // Validate userId is provided
-        if (!userId) {
-            return NextResponse.json(
-                { error: 'Authentication required. Please sign in.' },
-                { status: 401 }
-            );
-        }
+        // Use demo user ID if none provided (auth disabled)
+        const effectiveUserId = userId || 'demo-user';
 
         // If a new sheet is connected, ask the user what to do next.
         if (sheetUrl && !conversationHistory.some((m: any) => m.content.includes('Spreadsheet Connected'))) {
@@ -428,28 +429,28 @@ export async function POST(req: NextRequest) {
         
 
         // Get both toolkit tools and custom tools
-        const google_super_toolkit = await composio.tools.get(String(userId), {
+        const google_super_toolkit = await composio.tools.get(String(effectiveUserId), {
             toolkits: ['GOOGLESUPER'],
             limit: 10
         });
-        const google_sheet_tools = await composio.tools.get(String(userId), {
+        const google_sheet_tools = await composio.tools.get(String(effectiveUserId), {
             toolkits: ['GOOGLESHEETS'],
         });
-        const google_docs_tools = await composio.tools.get(String(userId), {
+        const google_docs_tools = await composio.tools.get(String(effectiveUserId), {
             toolkits: ['GOOGLEDOCS'],
             limit: 10
         });
-        const get_google_docs_tools = await composio.tools.get(String(userId), {
+        const get_google_docs_tools = await composio.tools.get(String(effectiveUserId), {
             tools: ['GOOGLEDOCS_GET_DOCUMENT_BY_ID','GOOGLEDOCS_UPDATE_DOCUMENT_MARKDOWN', 'GOOGLEDOCS_DELETE_CONTENT_RANGE']
         });
-        const get_google_sheets_tools = await composio.tools.get(String(userId), {
+        const get_google_sheets_tools = await composio.tools.get(String(effectiveUserId), {
             tools: ['GOOGLESHEETS_GET_SHEET_BY_ID']
         });
-        const composio_search_toolkit = await composio.tools.get(String(userId), {
+        const composio_search_toolkit = await composio.tools.get(String(effectiveUserId), {
             toolkits: ['COMPOSIO_SEARCH']
         });
 
-        const composio_toolkit = await composio.tools.get(String(userId), {
+        const composio_toolkit = await composio.tools.get(String(effectiveUserId), {
             toolkits: ['COMPOSIO']
         });
 
@@ -458,7 +459,7 @@ export async function POST(req: NextRequest) {
         let allTools = Object.assign({},google_sheet_tools, google_docs_tools, get_google_docs_tools, composio_search_toolkit, composio_toolkit);
         console.log(allTools);
         // Always add the slide generation tool
-        const customTools = await composio.tools.get(String(userId), {toolkits: [SLIDE_GENERATOR_TOOL]});
+        const customTools = await composio.tools.get(String(effectiveUserId), {toolkits: [SLIDE_GENERATOR_TOOL]});
         allTools = Object.assign({}, allTools, customTools);
         //console.log(allTools);
         
@@ -506,8 +507,14 @@ Updating google docs means updating the markdown of the document/ deleting all c
             content: prompt
         });
 
+        // Create OpenRouter client
+        const openrouter = createOpenAI({
+            apiKey: process.env.OPENROUTER_API_KEY,
+            baseURL: "https://openrouter.ai/api/v1",
+        });
+
         const { text, toolCalls, toolResults } = await generateText({
-            model: google('gemini-2.5-pro'),
+            model: openrouter('anthropic/claude-3.5-sonnet'),
             system: systemPrompt,
             messages,
             tools: allTools,

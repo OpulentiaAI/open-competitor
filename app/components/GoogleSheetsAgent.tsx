@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { FiSend, FiLink, FiMessageSquare, FiLoader, FiCheck, FiX } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiLink, FiMessageSquare, FiLoader, FiCheck, FiX } from 'react-icons/fi';
+import { AIChatInput } from './AIChatInput';
 import { clsx } from 'clsx';
 
 interface Message {
@@ -293,26 +294,14 @@ export default function GoogleSheetsAgent({ className, userId }: GoogleSheetsAge
 
         {/* Input */}
         {isConnected && (
-          <div className="p-4 border-t border-gray-100">
-            <div className="flex space-x-3">
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask about your spreadsheet..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                disabled={isLoading}
-              />
-              <button
-                onClick={sendMessage}
-                disabled={isLoading || !inputMessage.trim()}
-                className="w-10 h-10 bg-green-600 text-white rounded-full hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                <FiSend className="w-4 h-4" />
-              </button>
-            </div>
+          <div className="p-4 border-t border-gray-100 flex justify-center">
+            <AIChatInput
+              onSubmit={(message) => {
+                setInputMessage(message);
+                sendMessage();
+              }}
+              placeholder="Ask about your spreadsheet..."
+            />
           </div>
         )}
       </div>

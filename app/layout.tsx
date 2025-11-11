@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "@/lib/localstorage-polyfill";
 import { ConvexClientProvider } from "@/lib/convex-provider";
 
 const geistSans = Geist({
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Super Agent Powered by Composio",
-  description: "Create professional presentations and chat with your Google Sheets using AI. Powered by Gemini and Composio.",
+  title: "MealOutput SuperAgent - AI Powered by Opulentia & Composio",
+  description: "Create professional presentations and chat with your Google Sheets using AI. Powered by Opulentia & Composio.",
 };
 
 export default function RootLayout({

@@ -1,6 +1,6 @@
-# Open Genspark
+# MealOutput SuperAgent
 
-Open Source Genspark powered by Google's Gemini AI that can generate content, create presentations, analyze Google Sheets/Docs, and provide intelligent responses. This application combines chat-based AI interaction with document integration and presentation generation capabilities.
+Open Source AI platform powered by Opulentia & Composio that can generate content, create presentations, analyze Google Sheets/Docs, and provide intelligent responses. This application combines chat-based AI interaction with document integration and presentation generation capabilities.
 
 ## Features
 
@@ -26,7 +26,7 @@ Open Source Genspark powered by Google's Gemini AI that can generate content, cr
 1. **Clone the repository:**
    ```bash
    git clone <your-repo-url>
-   cd genspark
+   cd mealoutput-superagent
    ```
 
 2. **Install dependencies:**
@@ -185,3 +185,5 @@ If you encounter any issues or have questions, please open an issue on GitHub.
 ---
 
 **Note**: This application requires an active internet connection to generate content using the Gemini AI API and to connect to Google services.
+
+**Powered by**: [Opulentia](https://opulentia.com) & [Composio](https://composio.dev)
