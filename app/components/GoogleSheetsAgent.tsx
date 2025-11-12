@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FiLink, FiMessageSquare, FiLoader, FiCheck, FiX } from 'react-icons/fi';
 import { AIChatInput } from './AIChatInput';
 import { clsx } from 'clsx';
