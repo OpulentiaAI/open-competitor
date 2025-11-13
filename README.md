@@ -1,4 +1,4 @@
-# MealOutput SuperAgent
+# MealOutpost SuperAgent
 
 Open Source AI platform powered by Opulentia & Composio that can generate content, create presentations, analyze Google Sheets/Docs, and provide intelligent responses. This application combines chat-based AI interaction with document integration and presentation generation capabilities.
 

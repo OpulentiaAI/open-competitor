@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiPaperclip, FiUpload, FiDownload, FiFile, FiFolder, FiImage, FiFileText, FiVideo, FiMusic, FiTrash2, FiEye, FiEdit } from 'react-icons/fi';
+import { FiPaperclip, FiUpload, FiDownload, FiFile, FiFolder, FiImage, FiFileText, FiVideo, FiMusic, FiTrash2, FiEye, FiEdit, FiClock } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';

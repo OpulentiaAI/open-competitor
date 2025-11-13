@@ -44,7 +44,7 @@ A premium chat input component with:
 <PromptInputBox
   onSend={(message) => handleSubmit(message)}
   isLoading={isLoading}
-  placeholder="Ask MealOutput SuperAgent anything..."
+  placeholder="Ask MealOutpost SuperAgent anything..."
   className="bg-white rounded-2xl shadow-xl text-black"
 />
 ```
@@ -53,7 +53,7 @@ A premium chat input component with:
 ```typescript
 <AIChatInput
   onSubmit={(message) => handleSubmit(message)}
-  placeholder="Ask MealOutput SuperAgent anything or paste a Google Sheets/Docs URL..."
+  placeholder="Ask MealOutpost SuperAgent anything or paste a Google Sheets/Docs URL..."
 />
 ```
 

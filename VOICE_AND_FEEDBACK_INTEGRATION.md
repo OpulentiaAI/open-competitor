@@ -34,6 +34,12 @@ A premium voice recording interface with:
 - Rounded corners and shadow effects
 - Smooth animations and transitions
 
+**Transcription Integration:**
+- Real-time speech-to-text using OpenAI Whisper
+- Automatic transcription on recording submission
+- Loading states during transcription process
+- Error handling with user feedback
+
 ### 2. **MessageFeedback** (`app/components/MessageFeedback.tsx`)
 
 Interactive feedback component for AI messages:
@@ -142,10 +148,17 @@ Added below the AIChatInput:
    - Delete button to discard
    - Send button to submit
 
-4. **Submit:**
-   - Recording sent as transcribed text
+4. **Transcription:**
+   - Recording sent to OpenAI Whisper API
+   - "Transcribing..." loading state shown
+   - Audio converted to text automatically
+   - Error handling if transcription fails
+
+5. **Submit:**
+   - Transcribed text sent to AI agent
+   - AI processes text and triggers tool calls
    - Interface resets to idle state
-   - Message appears in chat thread
+   - Message appears in chat thread with AI response
 
 ### Message Feedback Flow
 
@@ -307,11 +320,46 @@ const [hoveredRating, setHoveredRating] = useState(0);
 ## 📚 Files Modified/Created
 
 ```
-app/components/
-├── VoiceInputSection.tsx       ✅ NEW - Voice recording UI
-├── MessageFeedback.tsx         ✅ NEW - Rating & actions
-└── SuperAgent.tsx              ✅ MODIFIED - Integration
+app/
+├── api/
+│   └── transcribe-audio/
+│       └── route.ts            ✅ NEW - Speech-to-text API
+└── components/
+    ├── VoiceInputSection.tsx   ✅ MODIFIED - Voice recording with transcription
+    ├── MessageFeedback.tsx     ✅ NEW - Rating & actions
+    └── SuperAgent.tsx          ✅ MODIFIED - Integration
 ```
+
+## 🔌 API Endpoints
+
+### `/api/transcribe-audio`
+
+**POST** - Transcribe audio to text using OpenAI Whisper
+
+**Request:**
+- Content-Type: `multipart/form-data`
+- Body: Audio file (WebM format)
+
+**Response:**
+```json
+{
+  "success": true,
+  "transcript": "The transcribed text from the audio"
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "error": "Error message describing what went wrong"
+}
+```
+
+**Integration:**
+- Used by `VoiceInputSection` component
+- Processes recorded audio automatically
+- Returns text for AI tool calling system
 
 ## 📝 Usage Examples
 

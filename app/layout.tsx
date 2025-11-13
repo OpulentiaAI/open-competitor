@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MealOutput SuperAgent - AI Powered by Opulentia & Composio",
+  title: "MealOutpost SuperAgent - AI Powered by Opulentia & Composio",
   description: "Create professional presentations and chat with your Google Sheets using AI. Powered by Opulentia & Composio.",
 };
 

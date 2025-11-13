@@ -5,7 +5,7 @@ import { FiX, FiStar, FiClock, FiShoppingCart, FiHeart, FiShare2, FiTruck, FiShi
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { MealData } from './MealCard';
@@ -278,15 +278,19 @@ export function MealDetailView({ meal, onClose, onPurchase }: MealDetailViewProp
                     Number of Servings
                   </label>
                   <Select
-                    id="servingSize"
                     value={servingSize.toString()}
-                    onChange={(e) => setServingSize(Number(e.target.value))}
+                    onValueChange={(value) => setServingSize(Number(value))}
                   >
-                    {[2, 4, 6, 8, 10].map(size => (
-                      <option key={size} value={size}>
-                        {size} servings (${(meal.price * size).toFixed(2)})
-                      </option>
-                    ))}
+                    <SelectTrigger id="servingSize">
+                      <SelectValue placeholder="Select servings" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[2, 4, 6, 8, 10].map(size => (
+                        <SelectItem key={size} value={size.toString()}>
+                          {size} servings (${(meal.price * size).toFixed(2)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
 
@@ -326,16 +330,19 @@ export function MealDetailView({ meal, onClose, onPurchase }: MealDetailViewProp
                     Delivery Date
                   </label>
                   <Select
-                    id="deliveryDate"
                     value={deliveryDate}
-                    onChange={(e) => setDeliveryDate(e.target.value)}
+                    onValueChange={setDeliveryDate}
                   >
-                    <option value="">Select delivery date</option>
-                    {getDeliveryDates().map(date => (
-                      <option key={date.value} value={date.value}>
-                        {date.label}
-                      </option>
-                    ))}
+                    <SelectTrigger id="deliveryDate">
+                      <SelectValue placeholder="Select delivery date" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getDeliveryDates().map(date => (
+                        <SelectItem key={date.value} value={date.value}>
+                          {date.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
 

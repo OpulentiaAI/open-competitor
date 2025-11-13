@@ -2,7 +2,7 @@
 
 ## ✅ Installation Complete!
 
-Your **MealOutput SuperAgent** application now has a fully functional e-commerce meal ordering system.
+Your **MealOutpost SuperAgent** application now has a fully functional e-commerce meal ordering system.
 
 ## 🎯 How to Use
 

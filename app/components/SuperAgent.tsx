@@ -12,16 +12,11 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import SlidePreview from './SlidePreview';
 import { ChatMessageList } from '@/components/ui/chat-message-list';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { GlowCard } from '@/components/ui/spotlight-card';
-import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { HyperText } from '@/components/ui/hyper-text';
-import ToolViews from '@/components/tool-views';
 import ToolbarExpandable from './ToolbarExpandable';
 import { AIChatInput } from './AIChatInput';
 import { MessageFeedback } from './MessageFeedback';
-import { VoiceInputSection } from './VoiceInputSection';
 
 export interface Slide {
   title: string;
@@ -68,7 +63,7 @@ const WelcomeScreen = ({ onPromptSelect }: { onPromptSelect: (prompt: string) =>
 
 
       <div className="mb-2">
-        <HyperText text="MealOutput SuperAgent" className="text-8xl font-bold" />
+        <HyperText text="MealOutpost SuperAgent" className="text-8xl font-bold" />
       </div>
       <p className="text-gray-500 mb-8 max-w-md">Powered by Opulentia & Composio - Your creative partner for generating content, slides, and more.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
@@ -190,8 +185,10 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT }: 
                 <div className="flex bg-gray-100 rounded-full p-1">
                   {message.slideData.map((_, index) => (
                     <button
-                      key={index}
+                      key={`slide-dot-${message.id}-${index}`}
+                      type="button"
                       onClick={() => setActiveSlide(index)}
+                      aria-label={`Go to slide ${index + 1}`}
                       className={`w-2 h-2 rounded-full mx-0.5 transition-all duration-200 ${
                         index === activeSlide ? 'bg-blue-500 w-4' : 'bg-gray-300 hover:bg-gray-400'
                       }`}
@@ -201,6 +198,7 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT }: 
               </div>
               <div className="flex items-center gap-3">
                 <button
+                  type="button"
                   onClick={() => setActiveSlide(Math.max(0, activeSlide - 1))}
                   disabled={activeSlide === 0}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
@@ -211,6 +209,7 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT }: 
                   Previous
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveSlide(Math.min(message.slideData!.length - 1, activeSlide + 1))}
                   disabled={activeSlide === message.slideData.length - 1}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
@@ -221,6 +220,7 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT }: 
                   </svg>
                 </button>
                 <button
+                  type="button"
                   onClick={downloadAsPPT}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
                 >
@@ -273,136 +273,6 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
   const [showDocument, setShowDocument] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(500); // Default wider width
   const [isResizing, setIsResizing] = useState(false);
-  
-  // New: Mode toggle between chat and tool-views
-  const [interfaceMode, setInterfaceMode] = useState<'chat' | 'toolview'>('chat');
-
-  // Tool handlers for tool-views
-  const handleSendMessage = async (message: string, tool: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/superagent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: message,
-          selectedTool: tool,
-          conversationHistory: [],
-          userId: userId,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Handle response based on tool type
-        console.log(`${tool} response:`, data.response);
-      }
-    } catch (error) {
-      console.error('Error with tool:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSearch = async (query: string) => {
-    setIsLoading(true);
-    try {
-      // Implement web search logic here
-      console.log('Searching for:', query);
-      // Simulate search results
-    } catch (error) {
-      console.error('Search error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGenerateImage = async (prompt: string, style: string) => {
-    setIsLoading(true);
-    try {
-      // Implement image generation logic here
-      console.log('Generating image:', prompt, style);
-      // Simulate image generation
-    } catch (error) {
-      console.error('Image generation error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCreatePresentation = async (topic: string, slideCount: number, style: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/generate-slides', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: topic }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Presentation created:', data);
-      }
-    } catch (error) {
-      console.error('Presentation creation error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCreateVideo = async (title: string, description: string, style: string) => {
-    setIsLoading(true);
-    try {
-      console.log('Creating video:', title, description, style);
-      // Implement video creation logic here
-    } catch (error) {
-      console.error('Video creation error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleMakeCall = async (contactName: string, phoneNumber: string, purpose: string) => {
-    setIsLoading(true);
-    try {
-      console.log('Making call:', contactName, phoneNumber, purpose);
-      // Implement phone call logic here
-    } catch (error) {
-      console.error('Phone call error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUploadFile = async (file: File) => {
-    setIsLoading(true);
-    try {
-      console.log('Uploading file:', file.name);
-      // Implement file upload logic here
-    } catch (error) {
-      console.error('File upload error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDownloadFile = async (fileId: string) => {
-    try {
-      console.log('Downloading file:', fileId);
-      // Implement file download logic here
-    } catch (error) {
-      console.error('File download error:', error);
-    }
-  };
-
-  const handleDeleteFile = async (fileId: string) => {
-    try {
-      console.log('Deleting file:', fileId);
-      // Implement file deletion logic here
-    } catch (error) {
-      console.error('File deletion error:', error);
-    }
-  };
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -608,12 +478,6 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
 
   const disconnectSpreadsheet = () => {
     setIsSheetConnected(false);
@@ -671,177 +535,127 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
   }, [isResizing]);
 
   return (
-    <div className={clsx('flex h-screen bg-gray-50 relative', className)}>
-      {/* Mode Switcher Toolbar */}
-      <div className="absolute top-4 left-4 z-30">
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-1 flex">
-          <button
-            onClick={() => setInterfaceMode('chat')}
-            className={clsx(
-              'px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2',
-              interfaceMode === 'chat' 
-                ? 'bg-blue-500 text-white shadow-sm' 
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            )}
-          >
-            <FiMessageSquare className="w-4 h-4" />
-            Chat Mode
-          </button>
-          <button
-            onClick={() => setInterfaceMode('toolview')}
-            className={clsx(
-              'px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2',
-              interfaceMode === 'toolview' 
-                ? 'bg-blue-500 text-white shadow-sm' 
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            )}
-          >
-            <FiGrid className="w-4 h-4" />
-            Tool Views
-          </button>
-        </div>
-      </div>
-
-      {/* Tool Selector Sidebar - only in toolview mode */}
-      {interfaceMode === 'toolview' && (
-        <div className="w-64 bg-white border-r border-gray-200 shadow-sm">
-          <div className="p-4 border-b border-gray-200">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-              <FiBox className="w-5 h-5" />
-              Available Tools
-            </h3>
-          </div>
-          <div className="p-2">
-            {agentTools.map((tool) => {
-              const Icon = tool.icon;
-              return (
-                <button
-                  key={tool.id}
-                  onClick={() => setSelectedTool(tool)}
-                  className={clsx(
-                    'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all duration-200 mb-1',
-                    selectedTool.id === tool.id
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  )}
-                >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  <div>
-                    <div className="font-medium text-sm">{tool.name}</div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Main Interface Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Tool-specific Header */}
-        {interfaceMode === 'toolview' && (
-          <div className="bg-white border-b border-gray-200 p-4">
-            <div className="flex items-center gap-3">
-              <selectedTool.icon className="w-6 h-6 text-blue-500" />
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">{selectedTool.name}</h2>
-                <p className="text-sm text-gray-500">
-                  {selectedTool.id === 'general' && 'Chat with AI assistant for general questions and tasks'}
-                  {selectedTool.id === 'slides' && 'Create professional presentations with AI'}
-                  {selectedTool.id === 'search' && 'Search the web for information and results'}
-                  {selectedTool.id === 'images' && 'Generate AI-powered images and artwork'}
-                  {selectedTool.id === 'videos' && 'Create videos from text descriptions'}
-                  {selectedTool.id === 'calls' && 'Make and manage phone calls'}
-                  {selectedTool.id === 'files' && 'Upload, organize, and manage your files'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Content Area */}
+    <div className={clsx('flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 relative', className)}>
+      {/* Main Chat Interface */}
+      <div className="flex-1 flex flex-col max-w-full">
+        {/* Messages Container */}
         <div className="flex-1 overflow-hidden">
-          {interfaceMode === 'chat' ? (
-            /* Original Chat Interface */
-            <>
-              {/* Messages */}
-              <div className="flex-1 overflow-hidden">
-                {messages.length === 0 ? (
-                  <WelcomeScreen onPromptSelect={handleExamplePrompt} />
-                ) : (
-                  <ChatMessageList smooth className="px-4 py-4">
-                    {messages.map((message) => (
-                      <MessageBubble
-                        key={message.id}
-                        message={message}
-                        activeSlide={activeSlide}
-                        setActiveSlide={setActiveSlide}
-                        downloadAsPPT={downloadAsPPT}
-                      />
-                    ))}
-                    
-                    {isLoading && (
+          {messages.length === 0 ? (
+            <WelcomeScreen onPromptSelect={handleExamplePrompt} />
+          ) : (
+            <ChatMessageList smooth className="px-4 py-6 space-y-6">
+              {messages.map((message) => (
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                  activeSlide={activeSlide}
+                  setActiveSlide={setActiveSlide}
+                  downloadAsPPT={downloadAsPPT}
+                />
+              ))}
+              
+              {isLoading && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-start gap-4 max-w-4xl"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <FiLoader className="w-4 h-4 text-white animate-spin" />
+                  </div>
+                  <div className="bg-white p-4 rounded-2xl rounded-bl-lg shadow-sm border border-gray-100">
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                      </div>
+                      <span className="text-sm">Thinking...</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </ChatMessageList>
+          )}
+        </div>
+
+        {/* Input Area */}
+        <div className="border-t border-gray-200 bg-white/80 backdrop-blur-sm p-6 shadow-xl">
+          <div className="max-w-4xl mx-auto flex flex-col items-center gap-4">
+            {/* Top Controls Row - Tool Selector and Toolbar unified */}
+            <div className="w-full flex items-center justify-start gap-1">
+              {/* Unified Control Container */}
+              <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm">
+                {/* Tool Selector Dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsToolSelectorOpen(!isToolSelectorOpen)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-gray-50 transition-all text-[10px] font-medium text-gray-600"
+                  >
+                    <selectedTool.icon className="w-3 h-3 text-gray-600" />
+                    <span className="font-sans">{selectedTool.name}</span>
+                    <FiChevronDown className={clsx(
+                      "w-2.5 h-2.5 transition-transform",
+                      isToolSelectorOpen && "rotate-180"
+                    )} />
+                  </button>
+                  
+                  <AnimatePresence>
+                    {isToolSelectorOpen && (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="flex items-start gap-4 max-w-4xl"
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute top-full left-0 mt-2 min-w-[180px] bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50"
                       >
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                          <FiLoader className="w-4 h-4 text-white animate-spin" />
-                        </div>
-                        <div className="bg-white p-4 rounded-2xl rounded-bl-lg shadow-sm border border-gray-100">
-                          <div className="flex items-center gap-2 text-gray-500">
-                            <div className="flex gap-1">
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
-                            </div>
-                            <span className="text-sm">Thinking...</span>
-                          </div>
-                        </div>
+                        {agentTools.map((tool) => {
+                          const Icon = tool.icon;
+                          return (
+                            <button
+                              key={tool.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTool(tool);
+                                setIsToolSelectorOpen(false);
+                              }}
+                              className={clsx(
+                                'w-full flex items-center gap-2 px-3 py-2 text-left transition-colors font-sans text-xs',
+                                selectedTool.id === tool.id
+                                  ? 'bg-blue-50 text-blue-700'
+                                  : 'hover:bg-gray-50 text-gray-700'
+                              )}
+                            >
+                              <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span className="font-medium">{tool.name}</span>
+                            </button>
+                          );
+                        })}
                       </motion.div>
                     )}
-                  </ChatMessageList>
-                )}
-              </div>
+                  </AnimatePresence>
+                </div>
 
-              {/* Input Area */}
-              <div className="border-t border-gray-200 bg-white p-4 shadow-md">
-                <div className="max-w-4xl mx-auto flex flex-col items-center gap-4">
-                  <AIChatInput
-                    onSubmit={(message) => handleSubmit(message)}
-                    placeholder="Ask MealOutput SuperAgent anything or paste a Google Sheets/Docs URL..."
-                  />
-                  
-                  {/* Voice Input Section */}
-                  <VoiceInputSection
-                    onTranscriptSubmit={(transcript) => handleSubmit(transcript)}
-                    className="w-full"
-                  />
-                  
-                  <p className="text-xs text-center text-gray-400 mt-2 font-sans">
-                    MealOutput SuperAgent can make mistakes. Consider checking important information.
-                  </p>
+                {/* Vertical Divider */}
+                <div className="h-6 w-px bg-gray-200" />
+
+                {/* Expandable Toolbar - Integrated */}
+                <div className="scale-[0.65] origin-center -mx-1">
+                  <ToolbarExpandable />
                 </div>
               </div>
-            </>
-          ) : (
-            /* Tool Views Interface */
-            <ToolViews
-              selectedTool={selectedTool.id}
+            </div>
+            
+            <AIChatInput
+              onSubmit={(message) => handleSubmit(message)}
+              placeholder="Ask MealOutpost SuperAgent anything or paste a Google Sheets/Docs URL..."
               isLoading={isLoading}
-              onSendMessage={handleSendMessage}
-              onSearch={handleSearch}
-              onGenerateImage={handleGenerateImage}
-              onCreatePresentation={handleCreatePresentation}
-              onCreateVideo={handleCreateVideo}
-              onMakeCall={handleMakeCall}
-              onUploadFile={handleUploadFile}
-              onDownloadFile={handleDownloadFile}
-              onDeleteFile={handleDeleteFile}
-              className="h-full"
             />
-          )}
+            
+            <p className="text-xs text-center text-gray-400 mt-2 font-sans">
+              MealOutpost SuperAgent can make mistakes. Consider checking important information.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -860,6 +674,10 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
             >
               {/* Resize Handle */}
               <div
+                role="separator"
+                aria-label="Resize spreadsheet sidebar"
+                aria-orientation="vertical"
+                tabIndex={0}
                 className={clsx(
                   "w-2 h-full bg-gray-100 hover:bg-gray-200 cursor-col-resize flex items-center justify-center group border-r border-gray-200 transition-colors",
                   isResizing && "bg-blue-200"
@@ -876,7 +694,9 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-lg font-semibold text-gray-900">Connected Spreadsheet</h2>
                     <button
+                      type="button"
                       onClick={disconnectSpreadsheet}
+                      aria-label="Disconnect spreadsheet"
                       className="text-gray-400 hover:text-gray-600 transition-colors"
                     >
                       <FiX className="w-5 h-5" />
@@ -916,6 +736,10 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
             >
               {/* Resize Handle */}
               <div
+                role="separator"
+                aria-label="Resize document sidebar"
+                aria-orientation="vertical"
+                tabIndex={0}
                 className={clsx(
                   "w-2 h-full bg-gray-100 hover:bg-gray-200 cursor-col-resize flex items-center justify-center group border-r border-gray-200 transition-colors",
                   isResizing && "bg-blue-200"
@@ -932,7 +756,9 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-lg font-semibold text-gray-900">Connected Document</h2>
                     <button
+                      type="button"
                       onClick={disconnectDocument}
+                      aria-label="Disconnect document"
                       className="text-gray-400 hover:text-gray-600 transition-colors"
                     >
                       <FiX className="w-5 h-5" />
@@ -961,9 +787,6 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
           )}
         </AnimatePresence>
       )}
-
-      {/* Dynamic Toolbar */}
-      <ToolbarExpandable />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 # MealOutpost - E-Commerce Customer Journey System
 
-A comprehensive meal ordering system built for **MealOutput SuperAgent** (formerly Genspark), specifically designed for **mealoutpost** to provide a seamless customer journey from discovery to purchase.
+A comprehensive meal ordering system built for **MealOutpost SuperAgent** (formerly Genspark), specifically designed for **mealoutpost** to provide a seamless customer journey from discovery to purchase.
 
 ## 🎯 Overview
 
@@ -294,7 +294,7 @@ Modify the `addons` array in `MealDetailView.tsx` to match your offerings.
 
 ## 📄 License
 
-Part of the MealOutput SuperAgent application by Opulentia.
+Part of the MealOutpost SuperAgent application by Opulentia.
 
 ---
 

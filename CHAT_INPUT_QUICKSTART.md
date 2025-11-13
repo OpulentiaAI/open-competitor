@@ -2,7 +2,7 @@
 
 ## ✅ What Was Done
 
-Successfully refactored all chat input interfaces in your **MealOutput SuperAgent** application with a premium, modern `AIChatInput` component.
+Successfully refactored all chat input interfaces in your **MealOutpost SuperAgent** application with a premium, modern `AIChatInput` component.
 
 ## 🎯 The New Component
 

@@ -8,9 +8,10 @@ import { api } from "../convex/_generated/api";
  * Provides type-safe access to AI-powered features
  */
 export function useConvexAgent() {
-  const chat = useAction(api.actions.chat);
-  const getYouTubeTranscript = useAction(api.actions.getYouTubeTranscript);
-  const getYouTubeInfo = useAction(api.actions.getYouTubeInfo);
+  // TODO: Implement actions or remove unused functionality
+  // const chat = useAction(api.actions.chat);
+  // const getYouTubeTranscript = useAction(api.actions.getYouTubeTranscript);
+  // const getYouTubeInfo = useAction(api.actions.getYouTubeInfo);
   const addMessage = useMutation(api.messages.add);
   
   return {
@@ -18,28 +19,31 @@ export function useConvexAgent() {
      * Send a chat message and get a response (includes YouTube tools)
      */
     chat: async (message: string, threadId?: string) => {
-      return await chat({ message, threadId });
+      throw new Error("Chat functionality not implemented yet");
+      // return await chat({ message, threadId });
     },
     
     /**
      * Get YouTube video transcript
      */
     getYouTubeTranscript: async (videoUrl: string, lang?: string) => {
-      return await getYouTubeTranscript({ videoUrl, lang });
+      throw new Error("YouTube transcript functionality not implemented yet");
+      // return await getYouTubeTranscript({ videoUrl, lang });
     },
     
     /**
      * Get YouTube video information
      */
     getYouTubeInfo: async (videoUrl: string) => {
-      return await getYouTubeInfo({ videoUrl });
+      throw new Error("YouTube info functionality not implemented yet");
+      // return await getYouTubeInfo({ videoUrl });
     },
     
     /**
      * Add a message directly to a thread
      */
     addMessage: async (
-      threadId: string,
+      threadId: any, // TODO: Fix type to proper Id<"threads">
       role: "user" | "assistant" | "system",
       content: string
     ) => {

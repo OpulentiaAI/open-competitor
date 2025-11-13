@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Mic, MicOff, Play, Pause, Trash2, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type RecordingState = 'idle' | 'loading' | 'recording' | 'recorded' | 'playing';
+type RecordingState = 'idle' | 'loading' | 'recording' | 'recorded' | 'playing' | 'transcribing';
 
 type VoiceInputSectionProps = {
   onTranscriptSubmit?: (transcript: string) => void;
@@ -118,11 +118,41 @@ export const VoiceInputSection = ({
     setState('idle');
   }, []);
 
-  const submitRecording = useCallback(() => {
-    // In a real implementation, this would send to a transcription service
-    onTranscriptSubmit?.('[Voice message transcription would appear here]');
-    restart();
-  }, [onTranscriptSubmit, restart]);
+  const submitRecording = useCallback(async () => {
+    if (!audioBlob) return;
+    
+    try {
+      setState('transcribing');
+      
+      // Create FormData and append audio file
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      
+      // Send to transcription API
+      const response = await fetch('/api/transcribe-audio', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Transcription failed');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.transcript) {
+        // Submit the transcribed text to the parent component
+        onTranscriptSubmit?.(data.transcript);
+        restart();
+      } else {
+        throw new Error(data.error || 'Failed to transcribe audio');
+      }
+    } catch (error) {
+      console.error('Transcription error:', error);
+      alert('Failed to transcribe audio. Please try again.');
+      setState('recorded'); // Return to recorded state on error
+    }
+  }, [audioBlob, onTranscriptSubmit, restart]);
 
   useEffect(() => {
     return () => {
@@ -186,6 +216,13 @@ export const VoiceInputSection = ({
                   />
                 );
               })}
+            </div>
+          )}
+          
+          {state === 'transcribing' && (
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2" />
+              <span className="text-xs text-gray-600">Transcribing...</span>
             </div>
           )}
           
@@ -286,16 +323,26 @@ export const VoiceInputSection = ({
         </button>
 
         {/* Submit Button */}
-        {(state === 'recorded' || state === 'playing') && (
+        {(state === 'recorded' || state === 'playing' || state === 'transcribing') && (
           <button
             type="button"
             onClick={submitRecording}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-all font-medium shadow-lg hover:shadow-xl"
+            disabled={state === 'transcribing'}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg hover:shadow-xl"
             aria-label="Submit recording"
           >
             <div className="flex items-center gap-2">
-              <Send className="w-5 h-5" />
-              <span>Send</span>
+              {state === 'transcribing' ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Transcribing...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5" />
+                  <span>Send</span>
+                </>
+              )}
             </div>
           </button>
         )}

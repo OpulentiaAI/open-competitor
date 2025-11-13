@@ -301,6 +301,7 @@ export default function GoogleSheetsAgent({ className, userId }: GoogleSheetsAge
                 sendMessage();
               }}
               placeholder="Ask about your spreadsheet..."
+              isLoading={isLoading}
             />
           </div>
         )}

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { FiSearch, FiFilter, FiX } from 'react-icons/fi';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -144,11 +144,16 @@ export function MealSearchBar({ onSearch, onFilterChange }: MealSearchBarProps) 
                 </label>
                 <Select
                   value={filters.category || 'All Meals'}
-                  onChange={(e) => updateFilter('category', e.target.value)}
+                  onValueChange={(value) => updateFilter('category', value)}
                 >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
 
@@ -179,11 +184,16 @@ export function MealSearchBar({ onSearch, onFilterChange }: MealSearchBarProps) 
                   </label>
                   <Select
                     value={filters.priceRange || 'All Prices'}
-                    onChange={(e) => updateFilter('priceRange', e.target.value)}
+                    onValueChange={(value) => updateFilter('priceRange', value)}
                   >
-                    {priceRanges.map(range => (
-                      <option key={range} value={range}>{range}</option>
-                    ))}
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priceRanges.map(range => (
+                        <SelectItem key={range} value={range}>{range}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
 
@@ -194,11 +204,16 @@ export function MealSearchBar({ onSearch, onFilterChange }: MealSearchBarProps) 
                   </label>
                   <Select
                     value={filters.prepTime || 'All Times'}
-                    onChange={(e) => updateFilter('prepTime', e.target.value)}
+                    onValueChange={(value) => updateFilter('prepTime', value)}
                   >
-                    {prepTimes.map(time => (
-                      <option key={time} value={time}>{time}</option>
-                    ))}
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {prepTimes.map(time => (
+                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
               </div>

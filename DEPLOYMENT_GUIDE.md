@@ -1,4 +1,4 @@
-# MealOutput SuperAgent - Deployment Guide 🚀
+# MealOutpost SuperAgent - Deployment Guide 🚀
 
 ## Vercel Deployment (Recommended)
 
@@ -327,7 +327,7 @@ After deployment, your app will be available at:
 
 ## Ready to Deploy! 🚀
 
-Your **MealOutput SuperAgent** is configured and ready for deployment with:
+Your **MealOutpost SuperAgent** is configured and ready for deployment with:
 - ✅ Advanced AI Chat Interface
 - ✅ Voice Recording with Waveform
 - ✅ Message Feedback & Ratings
