@@ -668,9 +668,14 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
 
   // Convex-based submit handler
   const handleSubmit = async (message?: string, e?: React.FormEvent) => {
+    console.log('[SuperAgent] handleSubmit START - message:', message, 'prompt:', prompt, 'isLoading:', isLoading);
     if (e) e.preventDefault();
     const msg = (typeof message === 'string' ? message : prompt).trim();
-    if (!msg || isLoading) return;
+    console.log('[SuperAgent] msg after trim:', msg, 'isLoading:', isLoading);
+    if (!msg || isLoading) {
+      console.log('[SuperAgent] EARLY RETURN - msg:', msg, 'isLoading:', isLoading);
+      return;
+    }
 
     // Check if the prompt contains a spreadsheet or doc URL
     const detectedSheetUrl = detectSpreadsheetUrl(msg);
