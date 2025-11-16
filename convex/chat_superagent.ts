@@ -89,6 +89,25 @@ export const sendMessage = mutation({
 });
 
 /**
+ * Helper query to get thread metadata
+ * Used by generateResponse action to resolve agentThreadId
+ */
+export const getThreadMetadata = query({
+  args: { threadId: v.id("threads") },
+  handler: async (ctx, { threadId }) => {
+    const threadDoc = await ctx.db.get(threadId);
+    if (!threadDoc) {
+      throw new Error(`Thread ${threadId} not found`);
+    }
+    const agentThreadId = (threadDoc.metadata as any)?.agentThreadId;
+    if (!agentThreadId) {
+      throw new Error(`Missing agentThreadId for thread ${threadId}`);
+    }
+    return { agentThreadId };
+  },
+});
+
+/**
  * Internal action that generates AI response
  * This is async and will stream deltas to the thread
  */
@@ -100,8 +119,10 @@ export const generateResponse = internalAction({
   },
   handler: async (ctx, { threadId, promptMessageId, userId }) => {
     try {
-      const threadDoc = await ctx.db.get(threadId);
-      const agentThreadId = (threadDoc?.metadata as any)?.agentThreadId ?? threadId;
+      // Actions must use runQuery to access DB
+      const { agentThreadId } = await ctx.runQuery(internal.chat_superagent.getThreadMetadata, {
+        threadId,
+      });
 
       await superAgent.generateText(
         ctx,
@@ -124,9 +145,14 @@ export const listMessages = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { threadId, limit = 50 }) => {
+    const threadDoc = await ctx.db.get(threadId);
+    if (!threadDoc) {
+      throw new Error(`Thread ${threadId} not found`);
+    }
+    const agentThreadId = (threadDoc.metadata as any)?.agentThreadId ?? threadId;
     const messages = await ctx.db
       .query("messages")
-      .withIndex("by_thread", (q) => q.eq("threadId", threadId))
+      .withIndex("by_thread", (q) => q.eq("threadId", agentThreadId))
       .order("desc")
       .take(limit);
 
