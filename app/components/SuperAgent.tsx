@@ -413,6 +413,24 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, ar
     const timeDiff = Math.abs(a.createdAt - message._creationTime);
     return timeDiff < 30000; // Within 30 seconds
   }) || [];
+  
+  // Extract text content from message (handle both string and array formats)
+  const getMessageText = (content: any): string => {
+    if (typeof content === 'string') return content;
+    if (Array.isArray(content)) {
+      return content
+        .map(part => {
+          if (typeof part === 'string') return part;
+          if (part.type === 'text' && part.text) return part.text;
+          return '';
+        })
+        .join('\n');
+    }
+    return String(content || '');
+  };
+  
+  const messageText = getMessageText(message.content);
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -439,11 +457,11 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, ar
                 )
               }}
             >
-              {message.content}
+              {messageText}
             </ReactMarkdown>
           </div>
         ) : (
-          <p className="whitespace-pre-wrap leading-relaxed text-gray-800">{message.content}</p>
+          <p className="whitespace-pre-wrap leading-relaxed text-gray-800">{messageText}</p>
         )}
         
         {message.hasSlides && message.slideData && message.slideData.length > 0 && (
