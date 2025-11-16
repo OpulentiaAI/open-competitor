@@ -706,7 +706,7 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
           userId: userId || 'anonymous',
           prompt: msg,
         });
-        setThreadId(result.threadId);
+        setThreadId(result.threadId as Id<"threads">);
       } else {
         // Send message to existing thread
         await sendMessage({
