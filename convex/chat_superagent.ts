@@ -132,12 +132,16 @@ export const listMessages = query({
     const agentThreadId = (threadDoc.metadata as any)?.agentThreadId ?? threadId;
     
     // Query the agent component's messages table
-    const agentMessages = await ctx.runQuery(components.agent.messages.list, {
+    const result = await ctx.runQuery(components.agent.messages.listMessagesByThreadId, {
       threadId: agentThreadId,
-      limit,
+      order: "asc",
+      paginationOpts: {
+        cursor: null,
+        numItems: limit,
+      },
     });
 
-    return agentMessages;
+    return result.page;
   },
 });
 
