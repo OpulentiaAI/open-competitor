@@ -8,6 +8,7 @@
     "convex:dev": "convex dev",
     "dev:all": "concurrently \"npm run dev\" \"npm run convex:dev\"",
     "convex:deploy": "convex deploy",
+    "prebuild": "npx convex env set CONVEX_DEPLOYMENT $CONVEX_DEPLOYMENT || true && npx convex deploy --cmd-url-env-var-name CONVEX_DEPLOYMENT_URL",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

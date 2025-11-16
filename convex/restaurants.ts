@@ -1,4 +1,4 @@
-import { query, internalMutation } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
@@ -54,7 +54,7 @@ export const searchForSuggestions = query({
  * Import restaurant data from CSV
  * Call this to seed your database with DoorDash data
  */
-export const importRestaurant = internalMutation({
+export const importRestaurant = mutation({
   args: {
     name: v.string(),
     city: v.string(),
