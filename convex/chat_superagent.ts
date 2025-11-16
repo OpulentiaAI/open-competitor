@@ -141,7 +141,13 @@ export const listMessages = query({
       },
     });
 
-    return result.page;
+    // Transform agent messages to UI format
+    return result.page.map((msg: any) => ({
+      ...msg,
+      // Flatten message.content and message.role to top level
+      content: msg.message?.content || msg.text || "",
+      role: msg.message?.role || "assistant",
+    }));
   },
 });
 

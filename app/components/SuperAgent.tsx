@@ -602,6 +602,9 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
   // Debug logging for messages
   useEffect(() => {
     console.log('[SuperAgent] State update - threadId:', threadId, 'messages:', messages, 'isLoading:', isLoading);
+    if (messages && messages.length > 0) {
+      console.log('[SuperAgent] First message structure:', JSON.stringify(messages[0], null, 2));
+    }
   }, [threadId, messages, isLoading]);
 
   // Spreadsheet state
