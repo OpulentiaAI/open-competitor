@@ -4,11 +4,34 @@ import { VercelProvider } from "@composio/vercel";
 import { generateText, generateObject } from 'ai';
 import { createOpenAI } from "@ai-sdk/openai";
 import { z } from 'zod';
+import { ConvexHttpClient } from "convex/browser";
+import { api as convexApi } from "@/convex/_generated/api";
 
 const composio = new Composio({
     apiKey: process.env.COMPOSIO_API_KEY,
     provider: new VercelProvider()
 });
+
+// Convex client singleton
+let convexClient: ConvexHttpClient | null = null;
+
+function getConvexClient(): ConvexHttpClient | null {
+  if (convexClient) return convexClient;
+
+  const url = process.env.NEXT_PUBLIC_CONVEX_URL || process.env.CONVEX_URL;
+  if (!url) {
+    console.warn(
+      "[SuperAgent] Convex URL not configured (NEXT_PUBLIC_CONVEX_URL or CONVEX_URL). Meal plan tools will be disabled."
+    );
+    return null;
+  }
+
+  convexClient = new ConvexHttpClient(url);
+  return convexClient;
+}
+
+const SLIDE_GENERATOR_TOOL = 'GENERATE_PRESENTATION_SLIDES';
+const MEAL_PLAN_TOOL = 'MEAL_PLAN_GENERATOR';
 
 // Fixed HTML templates for different slide types
 function generateSlideHTML(slide: any, style: string = 'professional') {
@@ -235,9 +258,6 @@ const slideSchema = z.object({
   }))
 });
 
-// Custom slide generation tool
-const SLIDE_GENERATOR_TOOL = 'GENERATE_PRESENTATION_SLIDES';
-
 // Initialize custom slide generation tool
 async function initializeSlideGenerationTool() {
     try {
@@ -384,6 +404,105 @@ async function initializePuppeteerTool() {
   }
 }
 
+// Initialize meal plan tool
+async function initializeMealPlanTool() {
+  try {
+    const client = getConvexClient();
+    if (!client) {
+      console.warn(
+        "[SuperAgent] Skipping meal plan tool initialization: Convex client unavailable."
+      );
+      return null;
+    }
+
+    const tool = await composio.tools.createCustomTool({
+      slug: MEAL_PLAN_TOOL,
+      name: 'Meal Program Plan Designer',
+      description: 'Design a structured multi-day office meal program plan for a company office using MealOutpost data. Creates comprehensive meal schedules with dietary considerations, budget optimization, and nutritional balance.',
+      inputParams: z.object({
+        companyName: z.string().describe('Company name (e.g. "Acme Inc")'),
+        officeId: z.string().describe('Office identifier (e.g. "nyc-hq", "sf-office")'),
+        startDate: z.string().describe('Start date in ISO 8601 format (YYYY-MM-DD), e.g. "2025-12-01"'),
+        endDate: z.string().describe('End date in ISO 8601 format (YYYY-MM-DD), e.g. "2025-12-05"'),
+        budgetPerPerson: z.number().optional().describe('Optional budget per person per day in USD'),
+        constraints: z.string().optional().describe('Optional dietary constraints and preferences (e.g. "vegetarian options daily, no pork, gluten-free available")'),
+      }),
+      execute: async (input: any) => {
+        const c = getConvexClient();
+        if (!c) {
+          console.warn(
+            "[SuperAgent] design_meal_program_plan called but Convex client unavailable."
+          );
+          return {
+            data: {
+              success: false,
+              error: "Convex backend not configured.",
+            },
+            error: null,
+            successful: false,
+          };
+        }
+
+        try {
+          const result = await c.action(convexApi.actions.designProgramPlan, {
+            companyName: input.companyName,
+            officeId: input.officeId,
+            startDate: input.startDate,
+            endDate: input.endDate,
+            budgetPerPerson: input.budgetPerPerson,
+            currency: "USD",
+            constraints: input.constraints,
+          });
+
+          if (!result || !result.success) {
+            return {
+              data: {
+                success: false,
+                error:
+                  result?.error ??
+                  "Meal plan generation failed in designProgramPlan action.",
+              },
+              error: null,
+              successful: false,
+            };
+          }
+
+          return {
+            data: {
+              success: true,
+              companyId: result.companyId,
+              programPlanId: result.programPlanId,
+              artifact: result.artifact,
+              message: `Successfully created meal program plan for ${input.companyName} ${input.officeId} from ${input.startDate} to ${input.endDate}. The plan includes ${result.artifact?.mealsByDay?.length || 0} days of meals.`,
+            },
+            error: null,
+            successful: true,
+          };
+        } catch (err: any) {
+          console.error(
+            "[SuperAgent] Error calling designProgramPlan Convex action:",
+            err
+          );
+          return {
+            data: {
+              success: false,
+              error: err?.message ?? "Unexpected error calling Convex.",
+            },
+            error: null,
+            successful: false,
+          };
+        }
+      },
+    });
+
+    console.log('🍽️ Meal plan tool created:', tool);
+    return tool;
+  } catch (error) {
+    console.error('Error creating meal plan tool:', error);
+    return null;
+  }
+}
+
 // Remove the old template functions since we now use generateSlideHTML
 
 export async function POST(req: NextRequest) {
@@ -416,9 +535,10 @@ export async function POST(req: NextRequest) {
             });
         }
         
-        // Initialize the custom slide generation tool
+        // Initialize custom tools
         await initializeSlideGenerationTool();
         await initializePuppeteerTool();
+        await initializeMealPlanTool();
         
         // --- REMOVED SLIDE GENERATION LOGIC ---
         // The old logic was too simple and has been removed.
@@ -455,12 +575,28 @@ export async function POST(req: NextRequest) {
         });
 
 
-        // Always include slide generation tool - available for all requests
+        // Build comprehensive tools list
         let allTools = Object.assign({},google_sheet_tools, google_docs_tools, get_google_docs_tools, composio_search_toolkit, composio_toolkit);
-        console.log(allTools);
-        // Always add the slide generation tool
+        
+        // Add slide generation tool (always available)
         const customTools = await composio.tools.get(String(effectiveUserId), {toolkits: [SLIDE_GENERATOR_TOOL]});
         allTools = Object.assign({}, allTools, customTools);
+        
+        // Add meal plan tool (only if Convex is configured)
+        const client = getConvexClient();
+        if (client) {
+          try {
+            const mealPlanTools = await composio.tools.get(String(effectiveUserId), {
+              toolkits: [MEAL_PLAN_TOOL],
+            });
+            allTools = Object.assign({}, allTools, mealPlanTools);
+            console.log('✅ Meal plan tools registered');
+          } catch (err) {
+            console.warn('[SuperAgent] Failed to register meal plan tools:', err);
+          }
+        } else {
+          console.log('ℹ️ Meal plan tools skipped (Convex not configured)');
+        }
         //console.log(allTools);
         
         let systemPrompt = `You are Super Agent, a helpful and efficient AI assistant powered by Composio. Your main goal is to assist users by using a suite of powerful tools to accomplish tasks.
@@ -482,6 +618,12 @@ This is a critical part of your function. Follow these rules precisely.
     - **Step 1: Analyze the File.** Use your tools to read and understand the data within the connected file.
     - **Step 2: Outline the Slides.** In your response, provide a clear, slide-by-slide outline of the presentation. Detail the title and key points for each slide based on your analysis.
     - **Step 3: Use the Magic Word.** After creating the slide outline, you **MUST** end your *entire* message with the special command: **[SLIDES]**
+
+**Workflow for Meal Program Planning:**
+
+1. When a user asks to design, schedule, or optimize multi-day office meals, call **Meal Program Plan Designer** immediately.
+2. Pass the company name, office identifier, date range, and any budgets or constraints exactly as the user states.
+3. After receiving the plan, summarize it clearly (highlight key days, budgets, and dietary coverage) and remind the user the full plan is saved in Program Plans.
 
 ---
 

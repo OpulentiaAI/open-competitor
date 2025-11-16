@@ -1,9 +1,10 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
-import { generateText } from "ai";
+import { generateText, generateObject } from "ai";
 import { createAgent, SUPER_AGENT_PROMPT, MODELS } from "./agents";
 import { api } from "./_generated/api";
 import { youtubeTools } from "./tools";
+import { ProgramPlanArtifactSchema } from "./artifacts";
 
 /**
  * Public API actions for the Convex backend
@@ -19,7 +20,7 @@ export const chat = action({
     threadId: v.optional(v.id("threads")),
     message: v.string(),
   },
-  handler: async (ctx, { threadId, message }) => {
+  handler: async (ctx, { threadId, message }): Promise<{ success: boolean; threadId?: any; response?: string; error?: string }> => {
     try {
       const apiKey = process.env.OPENROUTER_API_KEY;
       if (!apiKey) {
@@ -79,12 +80,16 @@ export const getYouTubeTranscript = action({
     videoUrl: v.string(),
     lang: v.optional(v.string()),
   },
-  handler: async (ctx, { videoUrl, lang = "en" }) => {
+  handler: async (_ctx, { videoUrl, lang = "en" }) => {
     try {
-      const result = await youtubeTools.getTranscript.execute({
-        videoUrl,
-        lang,
-      });
+      const result = await youtubeTools.getTranscript.execute(
+        { videoUrl, lang },
+        { 
+          toolCallId: 'transcript-call',
+          messages: [],
+          abortSignal: undefined
+        }
+      );
       
       return result;
     } catch (error) {
@@ -103,14 +108,108 @@ export const getYouTubeInfo = action({
   args: {
     videoUrl: v.string(),
   },
-  handler: async (ctx, { videoUrl }) => {
+  handler: async (_ctx, { videoUrl }) => {
     try {
-      const result = await youtubeTools.getVideoInfo.execute({
-        videoUrl,
-      });
+      const result = await youtubeTools.getVideoInfo.execute(
+        { videoUrl },
+        { 
+          toolCallId: 'info-call',
+          messages: [],
+          abortSignal: undefined
+        }
+      );
       
       return result;
     } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  },
+});
+
+export const designProgramPlan = action({
+  args: {
+    companyId: v.optional(v.id("companies")),
+    companyName: v.string(),
+    officeId: v.string(),
+    startDate: v.string(),
+    endDate: v.string(),
+    budgetPerPerson: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    constraints: v.optional(v.string()),
+    threadId: v.optional(v.id("threads")),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean; companyId?: any; programPlanId?: any; artifact?: any; error?: string }> => {
+    try {
+      const apiKey = process.env.OPENROUTER_API_KEY;
+      if (!apiKey) {
+        throw new Error("OPENROUTER_API_KEY not configured");
+      }
+
+      const agent = createAgent(apiKey);
+
+      // Get or create company
+      let companyId = args.companyId;
+      if (!companyId) {
+        companyId = await ctx.runMutation(api.companies.create, {
+          name: args.companyName,
+        });
+      } else {
+        await ctx.runMutation(api.companies.update, {
+          companyId,
+        });
+      }
+
+      const prompt = `You are an expert office meal program planner for workplace hospitality.
+
+Design a coherent multi-day meal program for employees at the company described below.
+
+Company: ${args.companyName}
+Office ID: ${args.officeId}
+Date range: ${args.startDate} to ${args.endDate}
+Budget per person (if provided): ${args.budgetPerPerson ?? "not specified"}
+Currency (if provided): ${args.currency ?? "USD"}
+Additional constraints or notes (if provided): ${args.constraints ?? "none"}.
+
+Return only a JSON object matching the provided schema. Use realistic meals and respect dietary, budget, and scheduling constraints.`;
+
+      const { object } = await generateObject({
+        model: agent(MODELS.MINIMAX_M2),
+        schema: ProgramPlanArtifactSchema,
+        prompt,
+      });
+
+      const artifact = ProgramPlanArtifactSchema.parse({
+        ...object,
+        type: "program_plan",
+        companyId: String(companyId),
+        officeId: args.officeId,
+        timeRange: {
+          startDate: args.startDate,
+          endDate: args.endDate,
+        },
+        budgetPerPerson: args.budgetPerPerson,
+        currency: args.currency ?? "USD",
+      });
+
+      // Create program plan via mutation
+      const programPlanId = await ctx.runMutation(api.program_plans.create, {
+        companyId,
+        officeId: args.officeId,
+        artifact,
+        threadId: args.threadId,
+      });
+
+      return {
+        success: true,
+        companyId,
+        programPlanId,
+        artifact,
+      };
+    } catch (error) {
+      console.error("designProgramPlan error:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",

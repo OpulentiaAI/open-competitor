@@ -3,6 +3,8 @@ import { createOpenAI } from "@ai-sdk/openai";
 /**
  * Agent configuration for OpenRouter
  * OpenRouter provides access to multiple AI models through a single API
+ *
+ * NOTE: This module is used by Convex actions to create model clients.
  */
 
 // Configure OpenRouter provider
@@ -53,4 +55,6 @@ export const MODELS = {
   CLAUDE_SONNET: "anthropic/claude-3.5-sonnet",
   CLAUDE_OPUS: "anthropic/claude-3-opus",
   GPT4: "openai/gpt-4-turbo",
-};
+  // Primary agentic model for MealOutpost flows
+  MINIMAX_M2: "minimax/minimax-m2",
+} as const;

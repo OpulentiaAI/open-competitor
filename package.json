@@ -17,7 +17,7 @@
     "@ai-sdk/openai": "^1.0.6",
     "@composio/core": "^0.1.35",
     "@composio/vercel": "^0.1.35",
-    "@convex-dev/agent": "^0.1.0",
+    "@convex-dev/agent": "^0.1.18",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.3",
