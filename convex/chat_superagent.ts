@@ -1,4 +1,4 @@
-import { internalAction, mutation, query } from "./_generated/server";
+import { internalAction, internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { superAgent } from "./agent_superagent";
 import { saveMessage } from "@convex-dev/agent";
@@ -89,10 +89,10 @@ export const sendMessage = mutation({
 });
 
 /**
- * Helper query to get thread metadata
+ * Helper internal query to get thread metadata
  * Used by generateResponse action to resolve agentThreadId
  */
-export const getThreadMetadata = query({
+export const getThreadMetadata = internalQuery({
   args: { threadId: v.id("threads") },
   handler: async (ctx, { threadId }) => {
     const threadDoc = await ctx.db.get(threadId);
