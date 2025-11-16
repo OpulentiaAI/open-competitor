@@ -4,7 +4,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   FiSend, FiPaperclip, FiSliders, FiGrid, FiMessageSquare, FiStar,
   FiImage, FiVideo, FiSearch, FiPhone, FiDownload, FiArrowRight,
-  FiBox, FiPlus, FiChevronDown, FiLoader, FiLink, FiCheck, FiX, FiEye, FiEyeOff
+  FiBox, FiPlus, FiChevronDown, FiLoader, FiLink, FiCheck, FiX, FiEye, FiEyeOff,
+  FiCheckSquare, FiFileText, FiYoutube
 } from 'react-icons/fi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -17,6 +18,9 @@ import { HyperText } from '@/components/ui/hyper-text';
 import ToolbarExpandable from './ToolbarExpandable';
 import { AIChatInput } from './AIChatInput';
 import { MessageFeedback } from './MessageFeedback';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
 
 export interface Slide {
   title: string;
@@ -27,12 +31,14 @@ export interface Slide {
 }
 
 interface Message {
-  id: string;
+  _id: Id<"messages">;
   role: 'user' | 'assistant';
   content: string;
-  timestamp: Date;
+  _creationTime: number;
   slideData?: Slide[];
   hasSlides?: boolean;
+  toolName?: string;
+  toolArgs?: any;
 }
 
 interface SuperAgentProps {
@@ -49,6 +55,92 @@ const agentTools = [
   { id: 'calls', name: 'Phone Calls', icon: FiPhone },
   { id: 'files', name: 'File Manager', icon: FiPaperclip },
 ];
+
+const ArtifactCard = ({ artifact }: { artifact: any }) => {
+  const getArtifactIcon = (type: string) => {
+    switch (type) {
+      case 'program_plan':
+        return <FiFileText className="w-5 h-5 text-blue-500" />;
+      case 'research_report':
+      case 'market_analysis':
+        return <FiSearch className="w-5 h-5 text-purple-500" />;
+      case 'presentation':
+        return <FiSliders className="w-5 h-5 text-green-500" />;
+      case 'youtube_transcript':
+        return <FiYoutube className="w-5 h-5 text-red-500" />;
+      case 'todo_list':
+        return <FiCheckSquare className="w-5 h-5 text-orange-500" />;
+      default:
+        return <FiBox className="w-5 h-5 text-gray-500" />;
+    }
+  };
+
+  const renderArtifactContent = () => {
+    const { type, artifact: content } = artifact;
+    
+    // TODO list rendering
+    if (type === 'todo_list' && content?.todos) {
+      return (
+        <div className="prose prose-sm max-w-none">
+          <ReactMarkdown>{content.todos}</ReactMarkdown>
+        </div>
+      );
+    }
+    
+    // YouTube transcript
+    if (type === 'youtube_transcript' && content?.transcript) {
+      return (
+        <div className="text-sm text-gray-700 max-h-48 overflow-y-auto">
+          <p className="whitespace-pre-wrap">{content.transcript.substring(0, 500)}...</p>
+        </div>
+      );
+    }
+    
+    // Program plan
+    if (type === 'program_plan' && content) {
+      return (
+        <div className="space-y-2 text-sm">
+          {content.days?.map((day: any, idx: number) => (
+            <div key={idx} className="flex items-start gap-2">
+              <span className="font-semibold text-gray-700">Day {day.day}:</span>
+              <span className="text-gray-600">{day.meals?.join(', ')}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    // Generic JSON display
+    return (
+      <pre className="text-xs text-gray-600 bg-gray-50 p-3 rounded overflow-x-auto">
+        {JSON.stringify(content, null, 2).substring(0, 300)}...
+      </pre>
+    );
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-4 shadow-sm"
+    >
+      <div className="flex items-center gap-3 mb-3">
+        {getArtifactIcon(artifact.type)}
+        <div className="flex-1">
+          <h4 className="font-semibold text-gray-800 text-sm">
+            {artifact.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+          </h4>
+          <p className="text-xs text-gray-500">
+            {new Date(artifact.createdAt).toLocaleTimeString()}
+          </p>
+        </div>
+      </div>
+      <div className="mt-2">
+        {renderArtifactContent()}
+      </div>
+    </motion.div>
+  );
+};
 
 const WelcomeScreen = ({ onPromptSelect }: { onPromptSelect: (prompt: string) => void }) => {
   const examplePrompts = [
@@ -84,12 +176,19 @@ const WelcomeScreen = ({ onPromptSelect }: { onPromptSelect: (prompt: string) =>
   );
 };
 
-const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT }: {
+const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, artifacts }: {
   message: Message;
   activeSlide: number;
   setActiveSlide: (slide: number) => void;
   downloadAsPPT: () => void;
+  artifacts?: any[];
 }) => {
+  // Find artifacts related to this message
+  const messageArtifacts = artifacts?.filter(a => {
+    // Match artifacts created around the same time as the message
+    const timeDiff = Math.abs(a.createdAt - message._creationTime);
+    return timeDiff < 30000; // Within 30 seconds
+  }) || [];
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -185,7 +284,7 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT }: 
                 <div className="flex bg-gray-100 rounded-full p-1">
                   {message.slideData.map((_, index) => (
                     <button
-                      key={`slide-dot-${message.id}-${index}`}
+                      key={`slide-dot-${message._id}-${index}`}
                       type="button"
                       onClick={() => setActiveSlide(index)}
                       aria-label={`Go to slide ${index + 1}`}
@@ -232,10 +331,19 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT }: 
           </div>
         )}
         
+        {/* Artifact Rendering */}
+        {message.role === 'assistant' && messageArtifacts.length > 0 && (
+          <div className="mt-4 space-y-3">
+            {messageArtifacts.map((artifact) => (
+              <ArtifactCard key={artifact._id} artifact={artifact} />
+            ))}
+          </div>
+        )}
+        
         {/* Message Feedback for Assistant Messages */}
         {message.role === 'assistant' && (
           <MessageFeedback
-            messageId={message.id}
+            messageId={message._id}
             onRatingChange={(rating) => console.log('Rating:', rating)}
             onGenerateQR={() => console.log('Generate QR')}
           />
@@ -253,12 +361,25 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT }: 
 
 export default function SuperAgent({ className, userId }: SuperAgentProps) {
   const [prompt, setPrompt] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [threadId, setThreadId] = useState<Id<"threads"> | null>(null);
   const [selectedTool, setSelectedTool] = useState(agentTools[0]);
   const [isToolSelectorOpen, setIsToolSelectorOpen] = useState(false);
   const [currentSlides, setCurrentSlides] = useState<Slide[]>([]);
   const [activeSlide, setActiveSlide] = useState(0);
+
+  // Convex hooks
+  const startThread = useMutation(api.chat_superagent.startThread);
+  const sendMessage = useMutation(api.chat_superagent.sendMessage);
+  const messages = useQuery(
+    api.chat_superagent.listMessages,
+    threadId ? { threadId } : "skip"
+  );
+  const artifacts = useQuery(
+    api.artifacts_queries.listByThread,
+    threadId ? { threadId } : "skip"
+  );
+
+  const isLoading = messages === undefined;
 
   // Spreadsheet state
   const [sheetUrl, setSheetUrl] = useState('');
@@ -327,123 +448,51 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
     inputRef.current?.focus();
   };
 
-  // Refactor handleSubmit to accept a message argument
+  // Convex-based submit handler
   const handleSubmit = async (message?: string, e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const msg = (typeof message === 'string' ? message : prompt).trim();
     if (!msg || isLoading) return;
 
-    // Check if the prompt contains a spreadsheet URL
+    // Check if the prompt contains a spreadsheet or doc URL
     const detectedSheetUrl = detectSpreadsheetUrl(msg);
     const detectedDocUrl = detectDocumentUrl(msg);
 
-    // Always switch to the correct sidebar if a URL is detected
+    // Handle sidebar display
     if (detectedSheetUrl && validateSheetUrl(detectedSheetUrl)) {
       setSheetUrl(detectedSheetUrl);
       setSheetId(extractSheetId(detectedSheetUrl));
       setIsSheetConnected(true);
       setShowSpreadsheet(true);
-      setShowDocument(false); // Always hide doc sidebar if spreadsheet is detected
+      setShowDocument(false);
     } else if (detectedDocUrl && validateDocUrl(detectedDocUrl)) {
       setDocUrl(detectedDocUrl);
       setDocId(extractDocId(detectedDocUrl));
       setIsDocConnected(true);
       setShowDocument(true);
-      setShowSpreadsheet(false); // Always hide spreadsheet sidebar if doc is detected
+      setShowSpreadsheet(false);
     }
 
-    const userMessage: Message = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: msg,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
     setPrompt('');
-    setIsLoading(true);
 
     try {
-      // Send to SuperAgent route
-      const response = await fetch('/api/superagent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      if (!threadId) {
+        // Start new thread
+        const result = await startThread({
+          userId: userId || 'anonymous',
           prompt: msg,
-          selectedTool: selectedTool.id,
-          conversationHistory: messages,
-          userId: userId,
-          sheetUrl: detectedSheetUrl || (isSheetConnected ? sheetUrl : undefined),
-          docUrl: detectedDocUrl || (isDocConnected ? docUrl : undefined),
-        }),
-      });
-
-      if (!response.ok) throw new Error('API response was not ok.');
-      
-      let data = await response.json();
-
-      // Check for the [SLIDES] command
-      if (data.response && data.response.includes('[SLIDES]')) {
-        const cleanedResponse = data.response.replace('[SLIDES]', '').trim();
-        
-        // Update the message content without the command
-        const assistantMessage: Message = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: cleanedResponse,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-
-        // Now, call the dedicated slide generation API
-        const slideResponse = await fetch('/api/generate-slides', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: cleanedResponse }),
         });
-
-        if (slideResponse.ok) {
-          const slideData = await slideResponse.json();
-          if (slideData.slides) {
-            // Find the message we just added and update it with the slide data
-            setMessages(prev => prev.map(msg => 
-              msg.id === assistantMessage.id 
-                ? { ...msg, slideData: slideData.slides, hasSlides: true } 
-                : msg
-            ));
-            setCurrentSlides(slideData.slides);
-            setActiveSlide(0);
-          }
-        }
+        setThreadId(result.threadId);
       } else {
-        // Normal response without slides
-        const assistantMessage: Message = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: data.response,
-          timestamp: new Date(),
-          slideData: data.slides || [],
-          hasSlides: data.hasSlides || false,
-        };
-        
-        setMessages(prev => [...prev, assistantMessage]);
-        if (data.slides && data.slides.length > 0) {
-          setCurrentSlides(data.slides);
-          setActiveSlide(0);
-        }
+        // Send message to existing thread
+        await sendMessage({
+          threadId,
+          userId: userId || 'anonymous',
+          prompt: msg,
+        });
       }
-
     } catch (error) {
-      console.error('Error:', error);
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: 'Sorry, I ran into an issue. Please try again.',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
+      console.error('Error sending message:', error);
     }
   };
 
@@ -540,17 +589,18 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
       <div className="flex-1 flex flex-col max-w-full">
         {/* Messages Container */}
         <div className="flex-1 overflow-hidden">
-          {messages.length === 0 ? (
+          {!messages || messages.length === 0 ? (
             <WelcomeScreen onPromptSelect={handleExamplePrompt} />
           ) : (
             <ChatMessageList smooth className="px-4 py-6 space-y-6">
-              {messages.map((message) => (
+              {messages.map((message: any) => (
                 <MessageBubble
-                  key={message.id}
+                  key={message._id}
                   message={message}
                   activeSlide={activeSlide}
                   setActiveSlide={setActiveSlide}
                   downloadAsPPT={downloadAsPPT}
+                  artifacts={artifacts}
                 />
               ))}
               

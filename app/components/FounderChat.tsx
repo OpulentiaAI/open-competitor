@@ -13,11 +13,11 @@ export function FounderChat({ onThreadChange }: FounderChatProps) {
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState<Id<"threads"> | null>(null);
 
-  const startThread = useMutation(api.chat_mealoutpost.startThread);
-  const sendMessage = useMutation(api.chat_mealoutpost.sendMessage);
+  const startThread = useMutation(api.chat_superagent.startThread);
+  const sendMessage = useMutation(api.chat_superagent.sendMessage);
 
   const messages = useQuery(
-    api.chat_mealoutpost.listMessages,
+    api.chat_superagent.listMessages,
     threadId ? { threadId } : "skip"
   );
 
