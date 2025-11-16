@@ -97,6 +97,25 @@ const schema = defineSchema({
     artifact: v.any(),
     createdAt: v.number(),
   }).index("by_thread", ["threadId"]),
+
+  // Unified artifacts table for all agent outputs
+  artifacts: defineTable({
+    threadId: v.id("threads"),
+    type: v.string(), // "presentation", "research_report", "youtube_transcript", "google_doc", etc.
+    title: v.string(),
+    payload: v.any(),
+    meta: v.optional(v.any()),
+    createdAt: v.number(),
+  }).index("by_thread", ["threadId"]),
+
+  // TODO/Planning lists for task management
+  todos: defineTable({
+    threadId: v.id("threads"),
+    userId: v.optional(v.string()),
+    content: v.string(), // Markdown formatted todo list
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_thread", ["threadId"]),
 });
 
 export default schema;

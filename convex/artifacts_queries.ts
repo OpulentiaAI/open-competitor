@@ -12,12 +12,12 @@ export const listByThread = query({
   handler: async (ctx, { threadId }) => {
     const artifacts: Array<{
       _id: string;
-      type: "program_plan" | "lead_qualification";
+      type: string;
       artifact: any;
       createdAt: number;
     }> = [];
 
-    // Fetch program plans
+    // Legacy: Fetch program plans
     const plans = await ctx.db
       .query("program_plans")
       .filter((q) => q.eq(q.field("threadId"), threadId))
@@ -33,21 +33,21 @@ export const listByThread = query({
       });
     }
 
-    // TODO: Add lead qualifications when that table exists
-    // const leads = await ctx.db
-    //   .query("leads")
-    //   .filter((q) => q.eq(q.field("threadId"), threadId))
-    //   .order("desc")
-    //   .collect();
+    // New: Fetch all artifacts from unified table
+    const allArtifacts = await ctx.db
+      .query("artifacts")
+      .withIndex("by_thread", (q) => q.eq("threadId", threadId))
+      .order("desc")
+      .collect();
 
-    // for (const lead of leads) {
-    //   artifacts.push({
-    //     _id: lead._id,
-    //     type: "lead_qualification",
-    //     artifact: lead.artifact,
-    //     createdAt: lead.createdAt,
-    //   });
-    // }
+    for (const art of allArtifacts) {
+      artifacts.push({
+        _id: art._id,
+        type: art.type,
+        artifact: art.payload,
+        createdAt: art.createdAt,
+      });
+    }
 
     // Sort by creation time, newest first
     artifacts.sort((a, b) => b.createdAt - a.createdAt);
