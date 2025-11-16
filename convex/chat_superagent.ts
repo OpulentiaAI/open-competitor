@@ -19,26 +19,36 @@ export const startThread = mutation({
     prompt: v.string(),
   },
   handler: async (ctx, { userId, prompt }) => {
-    // Create thread using SuperAgent
-    const { threadId } = await superAgent.createThread(ctx, { userId });
-    
-    // Save user message
+    // Create agent thread using SuperAgent (agent's internal thread store)
+    const { threadId: agentThreadId } = await superAgent.createThread(ctx, {
+      userId,
+    });
+
+    // Create Convex thread document to track this conversation in our own schema
+    const convexThreadId = await ctx.db.insert("threads", {
+      userId,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      metadata: { agentThreadId },
+    });
+
+    // Save user message into the agent's message log
     const { messageId } = await saveMessage(ctx, components.agent, {
-      threadId,
+      threadId: agentThreadId,
       prompt,
       userId,
     });
 
-    // Kick off async response generation
+    // Kick off async response generation, keyed by our Convex thread id
     await ctx.scheduler.runAfter(0, internal.chat_superagent.generateResponse, {
-      threadId: threadId as any,
+      threadId: convexThreadId,
       promptMessageId: messageId,
       userId,
     });
 
-    return { 
-      threadId, 
-      promptMessageId: messageId 
+    return {
+      threadId: convexThreadId,
+      promptMessageId: messageId,
     };
   },
 });
@@ -53,16 +63,23 @@ export const sendMessage = mutation({
     prompt: v.string(),
   },
   handler: async (ctx, { threadId, userId, prompt }) => {
-    // Save user message
+    // Look up the Convex thread to find the associated agent thread id
+    const threadDoc = await ctx.db.get(threadId);
+    if (!threadDoc) {
+      throw new Error(`Thread ${threadId} not found`);
+    }
+    const agentThreadId = (threadDoc.metadata as any)?.agentThreadId ?? threadId;
+
+    // Save user message into the agent's message log
     const { messageId } = await saveMessage(ctx, components.agent, {
-      threadId,
+      threadId: agentThreadId,
       prompt,
       userId,
     });
 
-    // Kick off async response generation
+    // Kick off async response generation, keyed by our Convex thread id
     await ctx.scheduler.runAfter(0, internal.chat_superagent.generateResponse, {
-      threadId: threadId as any,
+      threadId,
       promptMessageId: messageId,
       userId,
     });
@@ -83,9 +100,12 @@ export const generateResponse = internalAction({
   },
   handler: async (ctx, { threadId, promptMessageId, userId }) => {
     try {
+      const threadDoc = await ctx.db.get(threadId);
+      const agentThreadId = (threadDoc?.metadata as any)?.agentThreadId ?? threadId;
+
       await superAgent.generateText(
         ctx,
-        { threadId, userId },
+        { threadId: agentThreadId, userId },
         { promptMessageId }
       );
     } catch (error) {
