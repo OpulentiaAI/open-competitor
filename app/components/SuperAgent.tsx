@@ -923,7 +923,10 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
             </div>
             
             <AIChatInput
-              onSubmit={(message) => handleSubmit(message)}
+              onSubmit={(message) => {
+                console.log('[SuperAgent] AIChatInput onSubmit callback fired with:', message);
+                handleSubmit(message);
+              }}
               placeholder="Ask MealOutpost SuperAgent anything or paste a Google Sheets/Docs URL..."
               isLoading={isLoading}
             />
