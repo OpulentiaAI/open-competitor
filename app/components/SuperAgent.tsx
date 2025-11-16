@@ -421,12 +421,15 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, ar
       return content
         .map(part => {
           if (typeof part === 'string') return part;
-          if (part.type === 'text' && part.text) return part.text;
+          if (part && typeof part === 'object' && part.type === 'text' && part.text) return part.text;
           return '';
         })
         .join('\n');
     }
-    return String(content || '');
+    if (content && typeof content === 'object') {
+      if (content.type === 'text' && content.text) return content.text;
+    }
+    return String(content ?? '');
   };
   
   const messageText = getMessageText(message.content);
