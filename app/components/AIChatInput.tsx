@@ -32,9 +32,18 @@ export const AIChatInput = ({
   }, [message]);
 
   const handleSubmit = () => {
+    console.log('[AIChatInput] handleSubmit called');
+    console.log('[AIChatInput] message:', message);
+    console.log('[AIChatInput] message.trim():', message.trim());
+    console.log('[AIChatInput] onSubmit exists?', !!onSubmit);
+    
     if (message.trim()) {
+      console.log('[AIChatInput] Calling onSubmit with:', message);
       onSubmit?.(message);
+      console.log('[AIChatInput] Clearing message input');
       setMessage('');
+    } else {
+      console.log('[AIChatInput] Message is empty, not submitting');
     }
   };
 
