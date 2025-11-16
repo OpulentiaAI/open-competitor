@@ -117,6 +117,7 @@ export const generateResponse = internalAction({
 
 /**
  * List messages for a thread
+ * Queries the agent component's message store
  */
 export const listMessages = query({
   args: {
@@ -129,13 +130,14 @@ export const listMessages = query({
       throw new Error(`Thread ${threadId} not found`);
     }
     const agentThreadId = (threadDoc.metadata as any)?.agentThreadId ?? threadId;
-    const messages = await ctx.db
-      .query("messages")
-      .withIndex("by_thread", (q) => q.eq("threadId", agentThreadId))
-      .order("desc")
-      .take(limit);
+    
+    // Query the agent component's messages table
+    const agentMessages = await ctx.runQuery(components.agent.messages.list, {
+      threadId: agentThreadId,
+      limit,
+    });
 
-    return messages.reverse(); // Chronological order
+    return agentMessages;
   },
 });
 
