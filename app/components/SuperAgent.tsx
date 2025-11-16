@@ -599,6 +599,11 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
 
   const isLoading = threadId !== null && messages === undefined;
 
+  // Debug logging for messages
+  useEffect(() => {
+    console.log('[SuperAgent] State update - threadId:', threadId, 'messages:', messages, 'isLoading:', isLoading);
+  }, [threadId, messages, isLoading]);
+
   // Spreadsheet state
   const [sheetUrl, setSheetUrl] = useState('');
   const [sheetId, setSheetId] = useState('');

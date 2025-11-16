@@ -1,4 +1,4 @@
-import { internalAction, internalQuery, mutation, query } from "./_generated/server";
+import { internalAction, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { superAgent } from "./agent_superagent";
 import { saveMessage } from "@convex-dev/agent";
@@ -39,9 +39,10 @@ export const startThread = mutation({
       userId,
     });
 
-    // Kick off async response generation, keyed by our Convex thread id
+    // Kick off async response generation, passing both IDs
     await ctx.scheduler.runAfter(0, internal.chat_superagent.generateResponse, {
       threadId: convexThreadId,
+      agentThreadId,
       promptMessageId: messageId,
       userId,
     });
@@ -80,30 +81,12 @@ export const sendMessage = mutation({
     // Kick off async response generation, keyed by our Convex thread id
     await ctx.scheduler.runAfter(0, internal.chat_superagent.generateResponse, {
       threadId,
+      agentThreadId,
       promptMessageId: messageId,
       userId,
     });
 
     return { messageId };
-  },
-});
-
-/**
- * Helper internal query to get thread metadata
- * Used by generateResponse action to resolve agentThreadId
- */
-export const getThreadMetadata = internalQuery({
-  args: { threadId: v.id("threads") },
-  handler: async (ctx, { threadId }) => {
-    const threadDoc = await ctx.db.get(threadId);
-    if (!threadDoc) {
-      throw new Error(`Thread ${threadId} not found`);
-    }
-    const agentThreadId = (threadDoc.metadata as any)?.agentThreadId;
-    if (!agentThreadId) {
-      throw new Error(`Missing agentThreadId for thread ${threadId}`);
-    }
-    return { agentThreadId };
   },
 });
 
@@ -114,16 +97,12 @@ export const getThreadMetadata = internalQuery({
 export const generateResponse = internalAction({
   args: {
     threadId: v.id("threads"),
+    agentThreadId: v.string(),
     promptMessageId: v.string(),
     userId: v.optional(v.string()),
   },
-  handler: async (ctx, { threadId, promptMessageId, userId }) => {
+  handler: async (ctx, { agentThreadId, promptMessageId, userId }) => {
     try {
-      // Actions must use runQuery to access DB
-      const { agentThreadId } = await ctx.runQuery(internal.chat_superagent.getThreadMetadata, {
-        threadId,
-      });
-
       await superAgent.generateText(
         ctx,
         { threadId: agentThreadId, userId },
