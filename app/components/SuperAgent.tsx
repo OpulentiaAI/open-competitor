@@ -597,7 +597,7 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
     threadId ? { threadId } : "skip"
   );
 
-  const isLoading = messages === undefined;
+  const isLoading = threadId !== null && messages === undefined;
 
   // Spreadsheet state
   const [sheetUrl, setSheetUrl] = useState('');
