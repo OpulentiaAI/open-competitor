@@ -465,19 +465,13 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, ar
               }}
               tabIndex={0}
             >
-              <AnimatePresence mode="sync" initial={false}>
+              <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={activeSlide}
                   initial={{ opacity: 0, scale: 0.95, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                  transition={{ 
-                    duration: 0.4,
-                    ease: [0.4, 0.0, 0.2, 1],
-                    opacity: { duration: 0.3 },
-                    scale: { duration: 0.4 },
-                    y: { duration: 0.4 }
-                  }}
+                  transition={{ duration: 0.3 }}
                   className="w-full max-h-130 bg-white rounded-lg overflow-y-auto overflow-x-hidden"
                   style={{ minHeight: '300px' }}
                 >
@@ -699,24 +693,32 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
 
     setPrompt('');
 
+    console.log('[SuperAgent] Submitting message:', msg);
+    console.log('[SuperAgent] Current threadId:', threadId);
+    
     try {
       if (!threadId) {
         // Start new thread
+        console.log('[SuperAgent] Starting new thread...');
         const result = await startThread({
           userId: userId || 'anonymous',
           prompt: msg,
         });
+        console.log('[SuperAgent] Thread started:', result);
         setThreadId(result.threadId as Id<"threads">);
       } else {
         // Send message to existing thread
+        console.log('[SuperAgent] Sending message to existing thread...');
         await sendMessage({
           threadId,
           userId: userId || 'anonymous',
           prompt: msg,
         });
+        console.log('[SuperAgent] Message sent successfully');
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('[SuperAgent] Error sending message:', error);
+      alert('Failed to send message. Check console for details.');
     }
   };
 
