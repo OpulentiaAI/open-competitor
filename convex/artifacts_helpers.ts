@@ -44,14 +44,16 @@ export const saveArtifact = internalMutation({
   handler: async (ctx, { threadId, type, title, payload, meta }) => {
     // If threadId is a string (agent's internal ID), find the Convex thread
     let convexThreadId: any = threadId;
-    if (typeof threadId === 'string' && !threadId.includes('_')) {
-      const thread = await ctx.db
+    if (typeof threadId === 'string') {
+      let thread = await ctx.db
         .query("threads")
         .filter((q) => q.eq(q.field("metadata.agentThreadId"), threadId))
         .first();
       
       if (!thread) {
-        throw new Error(`No Convex thread found for agent threadId: ${threadId}`);
+        // Subagent thread - use most recent thread
+        thread = await ctx.db.query("threads").order("desc").first();
+        if (!thread) throw new Error("No threads exist");
       }
       convexThreadId = thread._id;
     }
