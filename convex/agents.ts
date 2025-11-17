@@ -140,6 +140,7 @@ Always ensure data integrity and follow best practices for spreadsheet organizat
  * Model configurations
  */
 export const MODELS = {
+  SHERLOCK_THINK: "openrouter/sherlock-think-alpha",
   CLAUDE_SONNET: "anthropic/claude-3.5-sonnet",
   CLAUDE_OPUS: "anthropic/claude-3-opus",
   GPT4: "openai/gpt-4-turbo",

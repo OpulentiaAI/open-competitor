@@ -9,7 +9,7 @@ const openrouter = createOpenAI({
   baseURL: "https://openrouter.ai/api/v1",
 });
 
-const languageModel = openrouter(MODELS.CLAUDE_SONNET);
+const languageModel = openrouter(MODELS.SHERLOCK_THINK);
 
 /**
  * Deep Web Research Tool
