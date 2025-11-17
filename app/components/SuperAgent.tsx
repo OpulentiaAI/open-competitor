@@ -619,14 +619,21 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
   );
 
   const isLoading = threadId !== null && messages === undefined;
+  
+  // Check if assistant is currently thinking (last message is user and status is pending)
+  const isThinking = messages && messages.length > 0 && 
+    messages[messages.length - 1].role === 'user' &&
+    (messages[messages.length - 1].status === 'pending' || 
+     messages[messages.length - 1].status === 'success');
 
   // Debug logging for messages
   useEffect(() => {
-    console.log('[SuperAgent] State update - threadId:', threadId, 'messages:', messages, 'isLoading:', isLoading);
+    console.log('[SuperAgent] State update - threadId:', threadId, 'messages:', messages, 'isLoading:', isLoading, 'isThinking:', isThinking);
     if (messages && messages.length > 0) {
       console.log('[SuperAgent] First message structure:', JSON.stringify(messages[0], null, 2));
+      console.log('[SuperAgent] Last message:', messages[messages.length - 1]);
     }
-  }, [threadId, messages, isLoading]);
+  }, [threadId, messages, isLoading, isThinking]);
 
   // Spreadsheet state
   const [sheetUrl, setSheetUrl] = useState('');
@@ -864,7 +871,7 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
                 />
               ))}
               
-              {isLoading && (
+              {(isLoading || isThinking) && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -874,13 +881,13 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
                     <FiLoader className="w-4 h-4 text-white animate-spin" />
                   </div>
                   <div className="bg-white p-4 rounded-2xl rounded-bl-lg shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-2 text-gray-500">
+                    <div className="flex items-center gap-3 text-gray-500">
                       <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                       </div>
-                      <span className="text-sm">Thinking...</span>
+                      <span className="text-sm font-medium">{isThinking ? 'Thinking...' : 'Loading messages...'}</span>
                     </div>
                   </div>
                 </motion.div>
