@@ -64,12 +64,15 @@ export const sendMessage = mutation({
     prompt: v.string(),
   },
   handler: async (ctx, { threadId, userId, prompt }) => {
+    console.log('[sendMessage] START - threadId:', threadId, 'prompt:', prompt.substring(0, 50));
+    
     // Look up the Convex thread to find the associated agent thread id
     const threadDoc = await ctx.db.get(threadId);
     if (!threadDoc) {
       throw new Error(`Thread ${threadId} not found`);
     }
     const agentThreadId = (threadDoc.metadata as any)?.agentThreadId ?? threadId;
+    console.log('[sendMessage] Found agentThreadId:', agentThreadId);
 
     // Save user message into the agent's message log
     const { messageId } = await saveMessage(ctx, components.agent, {
@@ -77,6 +80,7 @@ export const sendMessage = mutation({
       prompt,
       userId,
     });
+    console.log('[sendMessage] Saved message with ID:', messageId);
 
     // Kick off async response generation, keyed by our Convex thread id
     await ctx.scheduler.runAfter(0, internal.chat_superagent.generateResponse, {
@@ -85,6 +89,7 @@ export const sendMessage = mutation({
       promptMessageId: messageId,
       userId,
     });
+    console.log('[sendMessage] Scheduled generateResponse');
 
     return { messageId };
   },
