@@ -622,9 +622,8 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
   
   // Check if assistant is currently thinking (last message is user and status is pending)
   const isThinking = messages && messages.length > 0 && 
-    messages[messages.length - 1].role === 'user' &&
-    (messages[messages.length - 1].status === 'pending' || 
-     messages[messages.length - 1].status === 'success');
+    messages[messages.length - 1].role === 'assistant' &&
+    messages[messages.length - 1].status === 'pending';
 
   // Debug logging for messages
   useEffect(() => {

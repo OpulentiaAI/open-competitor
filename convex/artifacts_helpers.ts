@@ -31,18 +31,33 @@ export const getLatestMealSuggestionsForThread = query({
 /**
  * Generic artifact save mutation
  * Handles all artifact types: presentations, research_reports, images, videos, etc.
+ * Accepts either agent threadId (string) or Convex threadId (Id<"threads">)
  */
 export const saveArtifact = internalMutation({
   args: {
-    threadId: v.id("threads"),
+    threadId: v.union(v.id("threads"), v.string()),
     type: v.string(),
     title: v.string(),
     payload: v.any(),
     meta: v.optional(v.any()),
   },
   handler: async (ctx, { threadId, type, title, payload, meta }) => {
+    // If threadId is a string (agent's internal ID), find the Convex thread
+    let convexThreadId: any = threadId;
+    if (typeof threadId === 'string') {
+      const thread = await ctx.db
+        .query("threads")
+        .filter((q) => q.eq(q.field("metadata.agentThreadId"), threadId))
+        .first();
+      
+      if (!thread) {
+        throw new Error(`No Convex thread found for agent threadId: ${threadId}`);
+      }
+      convexThreadId = thread._id;
+    }
+    
     return await ctx.db.insert("artifacts", {
-      threadId,
+      threadId: convexThreadId,
       type,
       title,
       payload,
