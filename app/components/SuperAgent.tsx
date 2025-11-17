@@ -620,17 +620,19 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
 
   const isLoading = threadId !== null && messages === undefined;
   
-  // Check if assistant is currently thinking (last message is user and status is pending)
-  const isThinking = messages && messages.length > 0 && 
-    messages[messages.length - 1].role === 'assistant' &&
-    messages[messages.length - 1].status === 'pending';
+  // Check if assistant is currently thinking
+  // True if: last message is user (waiting for assistant response) OR last message is assistant with pending status
+  const isThinking = messages && messages.length > 0 && (
+    (messages[messages.length - 1].role === 'user' && messages[messages.length - 1].status === 'success') ||
+    (messages[messages.length - 1].role === 'assistant' && messages[messages.length - 1].status === 'pending')
+  );
 
   // Debug logging for messages
   useEffect(() => {
     console.log('[SuperAgent] State update - threadId:', threadId, 'messages:', messages, 'isLoading:', isLoading, 'isThinking:', isThinking);
     if (messages && messages.length > 0) {
       console.log('[SuperAgent] First message structure:', JSON.stringify(messages[0], null, 2));
-      console.log('[SuperAgent] Last message:', messages[messages.length - 1]);
+      console.log('[SuperAgent] Last message:', JSON.stringify(messages[messages.length - 1], null, 2));
     }
   }, [threadId, messages, isLoading, isThinking]);
 
