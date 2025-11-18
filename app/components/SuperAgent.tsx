@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+
 import {
   FiSend, FiPaperclip, FiSliders, FiGrid, FiMessageSquare, FiStar,
   FiImage, FiVideo, FiSearch, FiPhone, FiDownload, FiArrowRight,
@@ -17,7 +18,10 @@ import { GlowCard } from '@/components/ui/spotlight-card';
 import { HyperText } from '@/components/ui/hyper-text';
 import ToolbarExpandable from './ToolbarExpandable';
 import { AIChatInput } from './AIChatInput';
-import { MessageFeedback } from './MessageFeedback';
+import { InlineArtifactCard as ArtifactCard } from '@/components/artifacts/InlineArtifactCard';
+import { ArtifactPanel } from '@/components/artifacts/ArtifactPanel';
+import { RelatedContent } from '@/components/chat/RelatedContent';
+import MessageFeedback from './MessageFeedback';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
@@ -39,6 +43,7 @@ interface Message {
   hasSlides?: boolean;
   toolName?: string;
   toolArgs?: any;
+  relatedContent?: { id: string; title: string; type: string; url?: string; }[];
 }
 
 interface SuperAgentProps {
@@ -56,315 +61,8 @@ const agentTools = [
   { id: 'files', name: 'File Manager', icon: FiPaperclip },
 ];
 
-const ArtifactCard = ({ artifact }: { artifact: any }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+// ArtifactCard replaced by imported InlineArtifactCard
 
-  const getArtifactIcon = (type: string) => {
-    switch (type) {
-      case 'program_plan':
-        return <FiFileText className="w-5 h-5 text-blue-500" />;
-      case 'research_report':
-      case 'market_analysis':
-        return <FiSearch className="w-5 h-5 text-purple-500" />;
-      case 'presentation':
-        return <FiSliders className="w-5 h-5 text-green-500" />;
-      case 'youtube_transcript':
-        return <FiYoutube className="w-5 h-5 text-red-500" />;
-      case 'todo_list':
-        return <FiCheckSquare className="w-5 h-5 text-orange-500" />;
-      default:
-        return <FiBox className="w-5 h-5 text-gray-500" />;
-    }
-  };
-
-  const formatTimestamp = (value: number | string) => {
-    if (typeof value === 'string' && value.includes(':')) return value;
-    const seconds = typeof value === 'number' ? value : Number(value) || 0;
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    const segments = [hrs, mins, secs]
-      .map((unit) => String(unit).padStart(2, '0'))
-      .join(':');
-    return segments.replace(/^00:/, '');
-  };
-
-  const renderArtifactContent = () => {
-    const { type, artifact: content } = artifact;
-
-    if (type === 'todo_list' && content?.todos) {
-      return (
-        <div className="prose prose-sm max-w-none">
-          <ReactMarkdown>{content.todos}</ReactMarkdown>
-        </div>
-      );
-    }
-
-    if (type === 'program_plan' && content) {
-      return (
-        <div className="space-y-2 text-sm">
-          {content.days?.map((day: any, idx: number) => (
-            <div key={idx} className="flex items-start gap-2">
-              <span className="font-semibold text-gray-700">Day {day.day}:</span>
-              <span className="text-gray-600">{day.meals?.join(', ')}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (type === 'research_report' && content) {
-      return (
-        <div className="space-y-3">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500">Focus Areas</p>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {(content.focusAreas || []).map((area: string) => (
-                <span key={area} className="inline-flex items-center rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700">
-                  {area}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Top Sources</p>
-            <ul className="space-y-2">
-              {(content.sources || []).slice(0, 4).map((source: any, idx: number) => (
-                <li key={`source-${idx}`} className="text-sm">
-                  <div className="font-medium text-gray-800">
-                    <span className="text-xs text-gray-400 mr-2">[{idx + 1}]</span>
-                    {source.title || 'Untitled'}
-                  </div>
-                  {source.summary && (
-                    <p className="text-xs text-gray-500 line-clamp-2">{source.summary}</p>
-                  )}
-                  {source.url && (
-                    <a
-                      href={source.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:underline"
-                    >
-                      {new URL(source.url).hostname}
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      );
-    }
-
-    if (type === 'market_analysis' && content) {
-      return (
-        <div className="space-y-3 text-sm">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500">Summary</p>
-            <p className="text-gray-700 mt-1">{content.summary}</p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-xs font-semibold text-gray-500">Trends</p>
-              <ul className="mt-1 space-y-1 text-xs text-gray-600">
-                {(content.trends || []).map((trend: string) => (
-                  <li key={trend}>• {trend}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-500">Opportunities</p>
-              <ul className="mt-1 space-y-1 text-xs text-gray-600">
-                {(content.opportunities || []).map((opp: string) => (
-                  <li key={opp}>• {opp}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (type === 'presentation' && content) {
-      const slides = content.slides || [];
-      return (
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center justify-between">
-            <p className="text-xs uppercase tracking-wide text-gray-500">Slides</p>
-            <span className="text-xs font-medium text-gray-600">{slides.length} slides</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {slides.slice(0, 4).map((slide: any, idx: number) => (
-              <div key={idx} className="bg-white border border-gray-200 rounded p-2">
-                <p className="text-xs font-semibold text-gray-700 line-clamp-1">{slide.title || `Slide ${idx + 1}`}</p>
-                <p className="text-xs text-gray-500 line-clamp-2 mt-1">{slide.content || slide.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    if (type === 'lead_qualification' && content) {
-      const fitColor = 
-        (content.idealFitScore || content.fitScore || 0) >= 75 ? "text-green-600" :
-        (content.idealFitScore || content.fitScore || 0) >= 50 ? "text-yellow-600" : "text-red-600";
-      
-      return (
-        <div className="space-y-3 text-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-semibold text-gray-800">{content.companyName || 'Company'}</p>
-              {content.website && (
-                <a href={content.website} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
-                  {content.website}
-                </a>
-              )}
-            </div>
-            <div className="text-right">
-              <p className={`text-2xl font-bold ${fitColor}`}>{content.idealFitScore || content.fitScore || 0}</p>
-              <p className="text-xs text-gray-500">Fit Score</p>
-            </div>
-          </div>
-          {content.idealFitReason && (
-            <p className="text-xs text-gray-600 bg-blue-50 rounded p-2">{content.idealFitReason}</p>
-          )}
-        </div>
-      );
-    }
-
-    if (type === 'tool_run' && content) {
-      const statusColors = {
-        pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
-        ok: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        success: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        error: "bg-red-50 text-red-700 border-red-200",
-      };
-      const status = content.status || 'ok';
-      return (
-        <div className={`rounded p-3 text-xs ${statusColors[status as keyof typeof statusColors] || 'bg-gray-50 text-gray-700'}`}>
-          <div className="flex justify-between items-center mb-1">
-            <span className="font-mono font-semibold">{content.toolName || 'Tool'}</span>
-            <span className="uppercase text-[10px] tracking-wide font-bold">{status}</span>
-          </div>
-          {content.outputSummary && (
-            <p className="line-clamp-2 opacity-90">{content.outputSummary}</p>
-          )}
-          {content.error && (
-            <p className="line-clamp-2 font-medium">Error: {content.error}</p>
-          )}
-        </div>
-      );
-    }
-
-    if (type === 'youtube_transcript' && content) {
-      const segments = content.segments || content.chunks || content.captionSegments;
-      if (segments && Array.isArray(segments)) {
-        return (
-          <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-            {segments.slice(0, 6).map((segment: any, idx: number) => (
-              <div key={`segment-${idx}`} className="text-sm text-gray-700">
-                <span className="text-xs font-mono text-gray-500 mr-2">{formatTimestamp(segment.timestamp ?? segment.start)}</span>
-                <span>{segment.text || segment.caption}</span>
-              </div>
-            ))}
-          </div>
-        );
-      }
-
-      if (content.transcript) {
-        return (
-          <div className="text-sm text-gray-700 max-h-48 overflow-y-auto">
-            <p className="whitespace-pre-wrap">{content.transcript.substring(0, 500)}...</p>
-          </div>
-        );
-      }
-    }
-
-    return (
-      <pre className="text-xs text-gray-600 bg-gray-50 p-3 rounded overflow-x-auto">
-        {JSON.stringify(content, null, 2).substring(0, 300)}...
-      </pre>
-    );
-  };
-
-  const showViewFull = ['research_report', 'market_analysis', 'youtube_transcript', 'presentation', 'lead_qualification'].includes(artifact.type);
-
-  return (
-    <>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-4 shadow-sm"
-      >
-        <div className="flex items-center gap-3 mb-3">
-          {getArtifactIcon(artifact.type)}
-          <div className="flex-1">
-            <h4 className="font-semibold text-gray-800 text-sm">
-              {artifact.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-            </h4>
-            <p className="text-xs text-gray-500">
-              {new Date(artifact.createdAt).toLocaleTimeString()}
-            </p>
-          </div>
-          {showViewFull && (
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(true)}
-              className="text-xs font-medium text-blue-600 hover:text-blue-700"
-            >
-              View full
-            </button>
-          )}
-        </div>
-        <div className="mt-2">
-          {renderArtifactContent()}
-        </div>
-      </motion.div>
-
-      <AnimatePresence>
-        {isModalOpen && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsModalOpen(false)}
-          >
-            <motion.div
-              className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl p-6 max-h-[80vh] overflow-y-auto"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">
-                    {artifact.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Generated {new Date(artifact.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <FiX className="w-5 h-5" />
-                </button>
-              </div>
-              <pre className="text-xs bg-gray-50 border border-gray-100 rounded-lg p-4 whitespace-pre-wrap">
-                {JSON.stringify(artifact.artifact, null, 2)}
-              </pre>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
-  );
-};
 
 const WelcomeScreen = ({ onPromptSelect }: { onPromptSelect: (prompt: string) => void }) => {
   const examplePrompts = [
@@ -578,12 +276,20 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, ar
             ))}
           </div>
         )}
+
+        {/* Related Content */}
+        {message.relatedContent && message.relatedContent.length > 0 && (
+          <RelatedContent 
+            items={message.relatedContent} 
+            onItemClick={(item) => window.open(item.url, '_blank')}
+          />
+        )}
         
         {/* Message Feedback for Assistant Messages */}
         {message.role === 'assistant' && (
           <MessageFeedback
             messageId={message._id}
-            onRatingChange={(rating) => console.log('Rating:', rating)}
+            onRatingChange={(rating: number) => console.log('Rating:', rating)}
             onGenerateQR={() => console.log('Generate QR')}
           />
         )}
@@ -605,6 +311,7 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
   const [isToolSelectorOpen, setIsToolSelectorOpen] = useState(false);
   const [currentSlides, setCurrentSlides] = useState<Slide[]>([]);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [showArtifacts, setShowArtifacts] = useState(false);
 
   // Convex hooks
   const startThread = useMutation(api.chat_superagent.startThread);
@@ -961,6 +668,24 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
                 <div className="scale-[0.65] origin-center -mx-1">
                   <ToolbarExpandable />
                 </div>
+
+                {/* Artifacts Toggle */}
+                {artifacts && artifacts.length > 0 && (
+                  <>
+                    <div className="h-6 w-px bg-gray-200" />
+                    <button
+                      type="button"
+                      onClick={() => setShowArtifacts(!showArtifacts)}
+                      className={clsx(
+                        "flex items-center gap-1 px-2 py-1 rounded-md transition-all text-[10px] font-medium",
+                        showArtifacts ? "bg-blue-50 text-blue-600" : "hover:bg-gray-50 text-gray-600"
+                      )}
+                    >
+                      <FiBox className="w-3 h-3" />
+                      <span className="font-sans">Artifacts ({artifacts.length})</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
             
@@ -980,9 +705,41 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
         </div>
       </div>
 
-      {/* Spreadsheet/Document Sidebar - only when connected */}
-      {(showSpreadsheet || showDocument) && (
+      {/* Spreadsheet/Document/Artifact Sidebar */}
+      {(showSpreadsheet || showDocument || showArtifacts) && (
         <AnimatePresence>
+          {/* Artifact Panel Sidebar */}
+          {showArtifacts && artifacts && (
+             <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 h-full bg-white shadow-2xl border-l border-gray-200 z-30"
+              style={{ width: `${sidebarWidth}px` }}
+            >
+              {/* Resize Handle */}
+               <div
+                role="separator"
+                aria-label="Resize artifacts sidebar"
+                aria-orientation="vertical"
+                tabIndex={0}
+                className={clsx(
+                  "absolute left-0 top-0 bottom-0 w-1 hover:bg-blue-400 cursor-col-resize z-40 transition-colors",
+                  isResizing && "bg-blue-400"
+                )}
+                onMouseDown={handleMouseDown}
+              />
+              
+              <ArtifactPanel 
+                artifacts={artifacts} 
+                onClose={() => setShowArtifacts(false)}
+                title="Thread Artifacts"
+                className="h-full w-full"
+              />
+            </motion.div>
+          )}
+
           {/* Spreadsheet Sidebar */}
           {showSpreadsheet && isSheetConnected && (
             <motion.div

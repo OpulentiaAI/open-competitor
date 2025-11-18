@@ -12,13 +12,13 @@ type MessageFeedbackProps = {
   qrData?: string;
 };
 
-export const MessageFeedback = ({
+export default function MessageFeedback({
   messageId,
   onRatingChange,
   onGenerateQR,
   showQR = false,
   qrData
-}: MessageFeedbackProps) => {
+}: MessageFeedbackProps) {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
 
@@ -88,4 +88,4 @@ export const MessageFeedback = ({
       )}
     </div>
   );
-};
+}
