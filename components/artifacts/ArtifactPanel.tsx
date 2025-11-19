@@ -4,6 +4,8 @@ import { FiX, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
 import { ArtifactRenderer, getArtifactIcon, getArtifactTitle } from './ArtifactRenderer';
 import { artifactProcessor } from './ArtifactProcessor';
 import { artifactDebut } from './ArtifactDebut';
+import { ArtifactPanelNew } from './ArtifactPanelNew';
+import { artifactRegistry } from './ArtifactRegistry';
 
 interface ArtifactPanelProps {
   artifacts: any[];
@@ -92,6 +94,7 @@ const ArtifactCard = ({
   onDebut: () => void;
 }) => {
   const controls = useAnimation();
+  const isNewArtifact = !!artifactRegistry.get(artifact.type);
   
   useEffect(() => {
     onDebut();
@@ -147,37 +150,46 @@ const ArtifactCard = ({
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+              className="bg-white w-full max-w-4xl max-h-[90vh] h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-               <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
-                <div className="flex items-center gap-3">
-                  {getArtifactIcon(artifact.type)}
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900">{getArtifactTitle(artifact.type)}</h2>
-                    <p className="text-sm text-gray-500">Detailed View</p>
-                  </div>
-                </div>
-                <button onClick={onToggleExpand} className="p-2 hover:bg-gray-200 rounded-full">
-                  <FiX className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="p-6 overflow-y-auto flex-1">
-                <ArtifactRenderer 
-                  data={artifact} 
-                  context={{ isExpanded: true }} 
+              {isNewArtifact ? (
+                <ArtifactPanelNew 
+                  artifact={artifact} 
+                  onClose={onToggleExpand} 
+                  className="h-full w-full border-0 shadow-none rounded-none"
                 />
-                
-                {/* Raw Data View for debugging or details */}
-                <div className="mt-8 pt-4 border-t border-gray-100">
-                  <details className="text-xs text-gray-500">
-                    <summary className="cursor-pointer hover:text-gray-700 font-medium">View Raw Data</summary>
-                    <pre className="mt-2 p-4 bg-gray-50 rounded-lg overflow-x-auto">
-                      {JSON.stringify(artifact, null, 2)}
-                    </pre>
-                  </details>
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      {getArtifactIcon(artifact.type)}
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900">{getArtifactTitle(artifact.type)}</h2>
+                        <p className="text-sm text-gray-500">Detailed View</p>
+                      </div>
+                    </div>
+                    <button onClick={onToggleExpand} className="p-2 hover:bg-gray-200 rounded-full">
+                      <FiX className="w-6 h-6" />
+                    </button>
+                  </div>
+                  <div className="p-6 overflow-y-auto flex-1">
+                    <ArtifactRenderer 
+                      data={artifact} 
+                      context={{ isExpanded: true }} 
+                    />
+                    
+                    <div className="mt-8 pt-4 border-t border-gray-100">
+                      <details className="text-xs text-gray-500">
+                        <summary className="cursor-pointer hover:text-gray-700 font-medium">View Raw Data</summary>
+                        <pre className="mt-2 p-4 bg-gray-50 rounded-lg overflow-x-auto">
+                          {JSON.stringify(artifact, null, 2)}
+                        </pre>
+                      </details>
+                    </div>
+                  </div>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}
@@ -185,4 +197,5 @@ const ArtifactCard = ({
     </>
   );
 };
+
 

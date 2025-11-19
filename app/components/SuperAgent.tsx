@@ -98,6 +98,8 @@ const WelcomeScreen = ({ onPromptSelect }: { onPromptSelect: (prompt: string) =>
   );
 };
 
+import { ThinkingBlock } from './ThinkingBlock';
+
 const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, artifacts }: {
   message: Message;
   activeSlide: number;
@@ -130,7 +132,28 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, ar
     return String(content ?? '');
   };
   
-  const messageText = getMessageText(message.content);
+  const fullText = getMessageText(message.content);
+  
+  // Parse <think> tags
+  // Case 1: Complete <think>...</think> block
+  // Case 2: Open <think>... (streaming)
+  let thinkingContent = '';
+  let displayContent = fullText;
+  let isThinkingStream = false;
+
+  const thinkRegex = /<think>([\s\S]*?)(?:<\/think>|$)/;
+  const match = fullText.match(thinkRegex);
+
+  if (match) {
+    thinkingContent = match[1];
+    // Remove the thinking block from the display text
+    displayContent = fullText.replace(match[0], '').trim();
+    
+    // Check if the tag is closed
+    if (!fullText.includes('</think>')) {
+      isThinkingStream = true;
+    }
+  }
   
   return (
     <motion.div
@@ -148,6 +171,9 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, ar
       <GlowCard glowColor={message.role === 'user' ? 'blue' : 'purple'} className="min-w-0 w-auto h-auto !aspect-auto !h-auto !min-h-0 !p-2 !py-2 !px-4 !shadow-none">
         {message.role === 'assistant' ? (
           <div className="prose prose-sm max-w-none text-gray-800">
+            {thinkingContent && (
+              <ThinkingBlock content={thinkingContent} isThinking={isThinkingStream} />
+            )}
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
               components={{
@@ -158,11 +184,11 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, ar
                 )
               }}
             >
-              {messageText}
+              {displayContent}
             </ReactMarkdown>
           </div>
         ) : (
-          <p className="whitespace-pre-wrap leading-relaxed text-gray-800">{messageText}</p>
+          <p className="whitespace-pre-wrap leading-relaxed text-gray-800">{displayContent}</p>
         )}
         
         {message.hasSlides && message.slideData && message.slideData.length > 0 && (

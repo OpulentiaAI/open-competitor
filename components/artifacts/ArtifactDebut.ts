@@ -1,4 +1,4 @@
-import { AnimationControls } from 'framer-motion';
+import { LegacyAnimationControls as AnimationControls } from 'framer-motion';
 
 export interface DebutConfig {
   delay?: number;
