@@ -12,14 +12,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import SlidePreview from './SlidePreview';
 import { ChatMessageList } from '@/components/ui/chat-message-list';
 import { GlowCard } from '@/components/ui/spotlight-card';
 import { HyperText } from '@/components/ui/hyper-text';
-import ToolbarExpandable from './ToolbarExpandable';
 import { AIChatInput } from './AIChatInput';
 import { InlineArtifactCard as ArtifactCard } from '@/components/artifacts/InlineArtifactCard';
 import { ArtifactPanel } from '@/components/artifacts/ArtifactPanel';
+import { PresentationView } from '@/components/artifacts/views/PresentationView';
 import { RelatedContent } from '@/components/chat/RelatedContent';
 import MessageFeedback from './MessageFeedback';
 import { useMutation, useQuery } from 'convex/react';
@@ -98,7 +97,8 @@ const WelcomeScreen = ({ onPromptSelect }: { onPromptSelect: (prompt: string) =>
   );
 };
 
-import { ThinkingBlock } from './ThinkingBlock';
+import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ai-elements/reasoning';
+import { Streamdown } from 'streamdown';
 
 const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, artifacts }: {
   message: Message;
@@ -172,12 +172,14 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, ar
         {message.role === 'assistant' ? (
           <div className="prose prose-sm max-w-none text-gray-800">
             {thinkingContent && (
-              <ThinkingBlock content={thinkingContent} isThinking={isThinkingStream} />
+              <Reasoning isStreaming={isThinkingStream}>
+                <ReasoningTrigger />
+                <ReasoningContent>{thinkingContent}</ReasoningContent>
+              </Reasoning>
             )}
-            <ReactMarkdown 
-              remarkPlugins={[remarkGfm]}
+            <Streamdown 
               components={{
-                a: ({ href, children, ...props }) => (
+                a: ({ href, children, ...props }: any) => (
                   <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
                     {children}
                   </a>
@@ -185,7 +187,7 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, ar
               }}
             >
               {displayContent}
-            </ReactMarkdown>
+            </Streamdown>
           </div>
         ) : (
           <p className="whitespace-pre-wrap leading-relaxed text-gray-800">{displayContent}</p>
@@ -199,97 +201,21 @@ const MessageBubble = ({ message, activeSlide, setActiveSlide, downloadAsPPT, ar
               </svg>
               Presentation Preview
             </h3>
-            <div 
-              className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden shadow-lg border border-gray-200 h-120"
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowLeft' && activeSlide > 0) {
-                  setActiveSlide(activeSlide - 1);
-                } else if (e.key === 'ArrowRight' && activeSlide < message.slideData!.length - 1) {
-                  setActiveSlide(activeSlide + 1);
-                }
-              }}
-              tabIndex={0}
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={activeSlide}
-                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="w-full max-h-130 bg-white rounded-lg overflow-y-auto overflow-x-hidden"
-                  style={{ minHeight: '300px' }}
-                >
-                  {message.slideData[activeSlide] && message.slideData[activeSlide].html ? (
-                    <div 
-                      className="w-full h-120 p-4"
-                      dangerouslySetInnerHTML={{ __html: message.slideData[activeSlide].html! }}
-                    />
-                  ) : (
-                    <div className="p-4">
-                      {message.slideData[activeSlide] ? (
-                        <SlidePreview slide={message.slideData[activeSlide]} index={activeSlide} isSelected={true} onClick={()=>{}} />
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <FiLoader className="w-8 h-8 text-gray-400 animate-spin" />
-                          <p className="ml-4 text-gray-500">Generating slide content...</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
             
-            <div className="flex items-center justify-between mt-6">
-              <div className="flex items-center gap-3">
-                <p className="text-sm font-medium text-gray-600">Slide {activeSlide + 1} of {message.slideData.length}</p>
-                <div className="flex bg-gray-100 rounded-full p-1">
-                  {message.slideData.map((_, index) => (
-                    <button
-                      key={`slide-dot-${message._id}-${index}`}
-                      type="button"
-                      onClick={() => setActiveSlide(index)}
-                      aria-label={`Go to slide ${index + 1}`}
-                      className={`w-2 h-2 rounded-full mx-0.5 transition-all duration-200 ${
-                        index === activeSlide ? 'bg-blue-500 w-4' : 'bg-gray-300 hover:bg-gray-400'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveSlide(Math.max(0, activeSlide - 1))}
-                  disabled={activeSlide === 0}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveSlide(Math.min(message.slideData!.length - 1, activeSlide + 1))}
-                  disabled={activeSlide === message.slideData.length - 1}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
-                >
-                  Next
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={downloadAsPPT}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
-                >
-                  <FiDownload className="w-4 h-4" />
-                  Download PPT
-                </button>
-              </div>
+            {/* Render the rich interactive PresentationView directly */}
+            <div className="w-full max-w-2xl mx-auto h-[400px] mb-4">
+              <PresentationView data={{ slides: message.slideData }} />
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={downloadAsPPT}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                <FiDownload className="w-4 h-4" />
+                Download PPT
+              </button>
             </div>
           </div>
         )}
@@ -354,10 +280,11 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
   const isLoading = threadId !== null && messages === undefined;
   
   // Check if assistant is currently thinking
-  // True if: last message is user (waiting for assistant response) OR last message is assistant with pending status
+  // Logic: We only show the "Thinking..." loader if the LAST message is from the USER.
+  // If the last message is from the assistant (even if pending/streaming), the MessageBubble
+  // itself will handle the "thinking" state (via the Reasoning component).
   const isThinking = messages && messages.length > 0 && (
-    (messages[messages.length - 1].role === 'user' && messages[messages.length - 1].status === 'success') ||
-    (messages[messages.length - 1].role === 'assistant' && messages[messages.length - 1].status === 'pending')
+    (messages[messages.length - 1].role === 'user' && messages[messages.length - 1].status === 'success')
   );
 
   // Debug logging for messages
@@ -688,16 +615,14 @@ export default function SuperAgent({ className, userId }: SuperAgentProps) {
                 </div>
 
                 {/* Vertical Divider */}
-                <div className="h-6 w-px bg-gray-200" />
-
-                {/* Expandable Toolbar - Integrated */}
-                <div className="scale-[0.65] origin-center -mx-1">
-                  <ToolbarExpandable />
-                </div>
+                {artifacts && artifacts.length > 0 && (
+                  <div className="h-6 w-px bg-gray-200" />
+                )}
 
                 {/* Artifacts Toggle */}
                 {artifacts && artifacts.length > 0 && (
                   <>
+                    {/* Divider handled above if needed, but structure simplified */}
                     <div className="h-6 w-px bg-gray-200" />
                     <button
                       type="button"

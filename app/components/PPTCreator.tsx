@@ -1,8 +1,14 @@
-'use client';
-
 import { useState } from 'react';
 import { FiDownload, FiRefreshCw, FiSliders, FiZap } from 'react-icons/fi';
-import SlidePreview, { Slide } from './SlidePreview';
+import { PresentationView } from '@/components/artifacts/views/PresentationView';
+
+export interface Slide {
+  title: string;
+  content: string;
+  type: 'title' | 'content' | 'bullet';
+  bulletPoints?: string[];
+  html?: string;
+}
 
 interface PPTCreatorProps {
   initialSlides?: Slide[];
@@ -14,7 +20,6 @@ export default function PPTCreator({ initialSlides = [], userId }: PPTCreatorPro
   const [slideCount, setSlideCount] = useState(5);
   const [style, setStyle] = useState('professional');
   const [slides, setSlides] = useState<Slide[]>(initialSlides);
-  const [selectedSlide, setSelectedSlide] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [error, setError] = useState('');
@@ -48,7 +53,6 @@ export default function PPTCreator({ initialSlides = [], userId }: PPTCreatorPro
 
       const data = await response.json();
       setSlides(data.slides);
-      setSelectedSlide(0);
     } catch (err) {
       setError('Failed to generate slides. Please try again.');
       console.error('Error generating slides:', err);
@@ -102,8 +106,6 @@ export default function PPTCreator({ initialSlides = [], userId }: PPTCreatorPro
       setIsConverting(false);
     }
   };
-
-  const currentSlide = slides[selectedSlide];
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -204,65 +206,13 @@ export default function PPTCreator({ initialSlides = [], userId }: PPTCreatorPro
 
       {/* Slides Display */}
       {slides.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Slide Thumbnails */}
-          <div className="lg:col-span-1">
-            <h3 className="text-lg font-semibold mb-4 flex items-center">
-              <FiSliders className="mr-2" />
-              Slides ({slides.length})
-            </h3>
-            <div className="space-y-4 max-h-[600px] overflow-y-auto">
-              {slides.map((slide, index) => (
-                <SlidePreview
-                  key={index}
-                  slide={slide}
-                  index={index}
-                  isSelected={selectedSlide === index}
-                  onClick={() => setSelectedSlide(index)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Current Slide Preview */}
-          <div className="lg:col-span-3">
-            <h3 className="text-lg font-semibold mb-4">
-              Preview - Slide {selectedSlide + 1}
-            </h3>
-            {currentSlide && (
-              <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 max-h-[500px] overflow-y-auto">
-                <div className={`p-8 flex flex-col justify-center ${
-                  currentSlide.type === 'title' 
-                    ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white text-center rounded-lg' 
-                    : ''
-                }`} style={{ minHeight: '400px' }}>
-                  <h2 className={`font-bold mb-6 ${
-                    currentSlide.type === 'title' 
-                      ? 'text-4xl text-white' 
-                      : 'text-2xl text-blue-600 text-center'
-                  }`}>
-                    {currentSlide.title}
-                  </h2>
-                  
-                  <div className={`text-lg leading-relaxed ${
-                    currentSlide.type === 'title' ? 'text-blue-100' : 'text-gray-700'
-                  }`}>
-                    {currentSlide.type === 'bullet' && currentSlide.bulletPoints ? (
-                      <ul className="space-y-3 text-left">
-                        {currentSlide.bulletPoints.map((point, i) => (
-                          <li key={i} className="flex items-start">
-                            <span className="text-blue-500 mr-3 mt-1">•</span>
-                            <span>{point}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-center">{currentSlide.content}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+        <div className="w-full max-w-4xl mx-auto">
+          <h3 className="text-lg font-semibold mb-4 flex items-center">
+            <FiSliders className="mr-2" />
+            Preview
+          </h3>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm h-[500px] overflow-hidden">
+            <PresentationView data={{ slides }} />
           </div>
         </div>
       )}
